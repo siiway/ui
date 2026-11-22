@@ -24,6 +24,10 @@ updates:
       default-days: 7
     allow:
       - dependency-type: development
+    ignore:
+      # typescript-eslint doesn't support TypeScript 7 yet.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: build
       include: scope
