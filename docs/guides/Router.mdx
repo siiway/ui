@@ -1,0 +1,54 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Router" />
+
+## Router
+
+Some components link or navigate: data-list rows, overview tiles, settings
+link rows, back buttons, the status page's main button. They don't import a
+router. They use the one you give `<UiProvider router>`.
+
+### React Router
+
+React Router's `Link` and `useNavigate` fit as they are:
+
+```tsx
+import { Link, useNavigate } from "react-router-dom";
+import type { UiRouter } from "@siiway/ui-react";
+
+const router: UiRouter = { Link, useNavigate };
+
+<UiProvider scheme="light" router={router}>
+```
+
+Define `router` once, outside any component. A new object on every render
+re-renders everything that reads the provider.
+
+The provider can sit outside `<RouterProvider>`: `useNavigate` is only called
+by components that navigate, and those render inside your routes.
+
+### Other routers
+
+`Link` receives `to` (an in-app path), and may receive `state`, `className`,
+`onClick`, `aria-current` and `children`: pass them all on to the anchor.
+`useNavigate` is a hook that returns `(to: string) => void`:
+
+```tsx
+const router: UiRouter = {
+  Link: ({ to, state: _state, ...rest }) => <MyLink href={to} {...rest} />,
+  useNavigate: () => {
+    const nav = useMyRouter();
+    return (to) => nav.push(to);
+  },
+};
+```
+
+### No router
+
+Without `router`, links are plain `<a href>` and navigation loads the page,
+which suits static sites.
+
+### In your own components
+
+`<UiLink to="/apps">` renders a link through the router, and
+`useUiNavigate()` returns the navigate function.

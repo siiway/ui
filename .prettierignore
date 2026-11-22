@@ -1,0 +1,12 @@
+dist
+node_modules
+bun.lock
+*.tgz
+/release
+.changeset/*.md
+packages/*/CHANGELOG.md
+packages/react/test/__snapshots__
+storybook-static
+.wrangler
+# Fluent's code, kept as they format it to compare.
+.storybook/fluent

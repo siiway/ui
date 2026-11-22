@@ -1,0 +1,79 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Strings" />
+
+## Strings
+
+Text you show comes in as props: you translate it, the library renders it.
+The library owns only a few strings of its own: copy feedback, pagination,
+show/hide password, the colour picker's labels, the theme switch, the search
+button and the command palette's key hints, the outline's heading, and
+`aria-label`s. Those ship in English and Chinese.
+
+### Choosing the language
+
+Pass your app's current language to `<UiProvider locale>`. Any `zh` tag
+(`zh`, `zh-CN`, `zh-Hans-TW`) gives Chinese; anything else, or nothing, gives
+English.
+
+```tsx
+<UiProvider scheme="light" locale={i18n.language}>
+```
+
+### Changing a string
+
+`strings` replaces single strings; the rest stay as shipped:
+
+```tsx
+<UiProvider scheme="light" locale="en" strings={{ copied: "Copied" }}>
+```
+
+Strings that fill in a value are functions:
+
+```ts
+strings={{ totalItems: (count) => `${count} rows` }}
+```
+
+### Every string
+
+| Key                 | English                                | 中文                           |
+| ------------------- | -------------------------------------- | ------------------------------ |
+| `cancel`            | Cancel                                 | 取消                           |
+| `clear`             | Clear                                  | 清除                           |
+| `close`             | Close                                  | 关闭                           |
+| `required`          | Required                               | 必填                           |
+| `copy`              | Copy                                   | 复制                           |
+| `copied`            | Copied!                                | 已复制！                       |
+| `copyFailed`        | Copy failed                            | 复制失败                       |
+| `saveChanges`       | Save changes                           | 保存更改                       |
+| `discardChanges`    | Discard changes                        | 放弃更改                       |
+| `showPassword`      | Show password                          | 显示密码                       |
+| `hidePassword`      | Hide password                          | 隐藏密码                       |
+| `previous`          | Previous                               | 上一页                         |
+| `next`              | Next                                   | 下一页                         |
+| `pageOf`            | 2 / 7                                  | 2 / 7                          |
+| `totalItems`        | 1 item, 3 items                        | 共 3 项                        |
+| `pageNumber`        | Page                                   | 页数                           |
+| `goToPage`          | Go to page                             | 跳转到页                       |
+| `go`                | Go                                     | 跳转                           |
+| `pickColor`         | Pick a color                           | 选择颜色                       |
+| `hexColor`          | Hex color                              | 十六进制颜色                   |
+| `optionalHexColor`  | Optional hex color                     | 可选的十六进制颜色             |
+| `invalidHexColor`   | Enter a three- or six-digit hex color. | 请输入三位或六位十六进制色值。 |
+| `colorArea`         | Color saturation and brightness        | 颜色饱和度和亮度               |
+| `saturation`        | Saturation                             | 饱和度                         |
+| `brightness`        | Brightness                             | 亮度                           |
+| `hue`               | Hue                                    | 色相                           |
+| `theme`             | Theme                                  | 主题                           |
+| `themeSystem`       | System                                 | 跟随系统                       |
+| `themeLight`        | Light                                  | 浅色                           |
+| `themeDark`         | Dark                                   | 深色                           |
+| `search`            | Search                                 | 搜索                           |
+| `commandMove`       | to move                                | 移动                           |
+| `commandOpen`       | to open                                | 打开                           |
+| `commandClose`      | to close                               | 关闭                           |
+| `onThisPage`        | On this page                           | 目录                           |
+| `openNavigation`    | Open navigation                        | 打开导航                       |
+| `primaryNavigation` | Primary                                | 主导航                         |
+
+In your own components, `useUiStrings()` returns the current set.

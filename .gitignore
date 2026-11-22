@@ -1,0 +1,16 @@
+node_modules
+dist
+*.tsbuildinfo
+*.tgz
+/release
+*.log
+.DS_Store
+
+# Editor directories and files
+.vscode/
+.idea
+
+# ai
+.claude
+/storybook-static
+.wrangler

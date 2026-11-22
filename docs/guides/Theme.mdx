@@ -1,0 +1,150 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Theme.stories";
+
+<Meta of={Stories} />
+
+## Theme
+
+The SiiWay look is Fluent UI v9's theme with three things changed:
+
+- **Neutral greys.** One flat page colour (the canvas) is shared by header,
+  sidebar and content. Cards differ from it by a hairline border and at most
+  a shade of fill. Greys are true neutrals. Form-control borders stay above
+  3:1 contrast.
+- **Radii.** One step rounder than Fluent's defaults (6, 8, 10 and 12 px).
+- **Shadows.** Only for floating surfaces (menus, popovers, dialogs). Page
+  content is flat and separated by borders alone.
+
+### Light and dark
+
+`useThemeMode()` keeps the person's choice and works out the scheme to draw:
+
+```tsx
+const { mode, setMode, scheme } = useThemeMode();
+
+<UiProvider page scheme={scheme}>
+  <ThemeSwitch value={mode} onChange={setMode} />…
+</UiProvider>;
+```
+
+- `mode` is the choice: `system`, `light` or `dark`. `setMode` stores it in
+  `localStorage`, and the app's other tabs follow.
+- `scheme` is what to draw now. For `system`, it follows the OS setting as
+  it changes.
+- Options: `storageKey` (default `"siiway-theme"`) and `defaultMode`, used
+  until a choice is stored (default `"system"`).
+
+`page` makes the outermost provider the page. It and `<html>` take the
+canvas colour, the body loses the browser's 8px margin, and `<html>` gets
+`color-scheme`, so scrollbars and native controls match, and
+`data-scheme="light"` or `"dark"` for your own CSS. Leave it off nested
+providers, such as a preview.
+
+#### Before the app loads
+
+Until the app's JavaScript runs, the browser shows a white page, which
+flashes before a dark one. `schemeBootScript()` returns a short script that
+draws `<html>` in the stored scheme first. Put it at the top of `<head>`; with
+Vite:
+
+```ts
+// vite.config.ts
+import { schemeBootScript } from "@siiway/ui-core";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    {
+      name: "scheme",
+      transformIndexHtml: () => [
+        {
+          tag: "script",
+          children: schemeBootScript(),
+          injectTo: "head-prepend",
+        },
+      ],
+    },
+  ],
+});
+```
+
+Give it the same `storageKey` and `defaultMode` as `useThemeMode`. Under a
+Content Security Policy, allow the script by its hash.
+
+#### On the server
+
+The server can't see the stored choice or the OS setting, so `useThemeMode`
+renders `defaultMode`, drawn light, and the client moves to the real scheme
+as it hydrates. The boot script keeps the page's background right
+meanwhile. To render the right scheme on the server, keep the choice in a
+cookie instead, and pass the scheme to `<UiProvider scheme>` yourself.
+
+### In React
+
+`<UiProvider>` builds the theme for you. To build it yourself, for example
+for a CSS rule for the scheme you didn't render:
+
+```ts
+import { createCSSRuleFromTheme } from "@fluentui/react-components";
+import { createTheme } from "@siiway/ui-react";
+
+const dark = createTheme({ scheme: "dark", accent: "#0078d4" });
+const css = createCSSRuleFromTheme(
+  'html[data-scheme="dark"] .fui-FluentProvider',
+  dark,
+);
+```
+
+### The accent
+
+`accent` sets the brand colour: primary buttons, links, focus rings, selected
+states. The library builds Fluent's 16-shade brand ramp around it, darkest
+(shade 10) to lightest (160). The accent sits exactly at shade 80, which the
+light theme uses for primary buttons and links, so those are precisely the
+colour you configured. Each step is 7 points of lightness.
+
+Pick an accent to see the controls under it follow:
+
+<Canvas of={Stories.Accent} />
+
+```tsx
+<UiProvider scheme="light" accent="#8a3ffc">
+```
+
+Accepted forms are `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`. Alpha is
+ignored. Anything else, or nothing, gives `#0078d4`.
+
+### Without React
+
+`@siiway/ui-core` has everything as plain data, keyed by Fluent token names:
+
+```ts
+import { brandRamp, themeOverrides, CANVAS } from "@siiway/ui-core";
+
+brandRamp("#0078d4"); // { 10: "#…", …, 80: "#0078d4", …, 160: "#…" }
+themeOverrides("dark"); // { colorNeutralBackground1: "#222222", borderRadiusMedium: "6px", … }
+CANVAS.dark; // "#1a1a1a"
+```
+
+Fluent's web components read the same tokens as CSS variables
+(`--colorNeutralBackground1`, …). To use the look there, build a theme from
+`@fluentui/tokens` with `brandRamp(accent)` and spread
+`themeOverrides(scheme)` over it.
+
+| Export                 | What it is                                                         |
+| ---------------------- | ------------------------------------------------------------------ |
+| `NEUTRAL[scheme]`      | Neutral backgrounds, foregrounds, strokes and loading placeholders |
+| `RADII`                | Corner radii                                                       |
+| `SHADOWS[scheme]`      | Shadows for floating surfaces                                      |
+| `CANVAS[scheme]`       | The page backdrop colour                                           |
+| `themeOverrides()`     | All of the above for one scheme, ready to spread over a theme      |
+| `brandRamp(accent)`    | The 16-shade brand ramp                                            |
+| `DEFAULT_ACCENT`       | `#0078d4`                                                          |
+| `normalizeAccent()`    | Accent normalizing as described above                              |
+| `normalizeHexColor()`  | Validates a colour someone typed: 3 or 6 hex digits, `#` optional  |
+| `hexToHsl`, `hslToHex` | HSL conversion, unrounded                                          |
+| `hexToHsv`, `hsvToHex` | HSV conversion, for colour pickers                                 |
+| `schemeBootScript()`   | The script for `<head>`, [above](#before-the-app-loads)            |
+| `resolveScheme()`      | `(mode, systemDark)` to the scheme to draw                         |
+| `isThemeMode()`        | Whether a stored value is `system`, `light` or `dark`              |
+| `THEME_STORAGE_KEY`    | `"siiway-theme"`, the default `storageKey`                         |

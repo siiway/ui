@@ -1,0 +1,34 @@
+{
+  "name": "@siiway/ui-core",
+  "version": "0.1.0",
+  "description": "SiiWay design tokens, theme maths and UI strings, for any framework.",
+  "license": "MIT",
+  "homepage": "https://ui.siiway.org",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/siiway/ui.git",
+    "directory": "packages/core"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/.tsbuildinfo",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,181 @@
+/*
+ * Our changes to Fluent's stylesheet (fluent/styles.css, loaded before this).
+ *
+ * The dark scheme: Fluent's docs are light only. <UiProvider page> in the
+ * docs container sets data-scheme on <html>; each colour Fluent fixes gets
+ * its dark value here, the rest of their rules stand.
+ */
+
+html[data-scheme="dark"] {
+  --sw-divider: #3d3d3d;
+  --sw-toc-text: #d6d6d6;
+  --sw-toc-rail: #333333;
+  --sw-toc-mark: #479ef5;
+}
+
+html[data-scheme="dark"] #storybook-docs h1.sbdocs-title,
+html[data-scheme="dark"] #storybook-docs .sbdocs p:not(.sbdocs-preview p),
+html[data-scheme="dark"] #storybook-docs .sbdocs h2:not(.sbdocs-preview h2),
+html[data-scheme="dark"] #storybook-docs .sbdocs-h3,
+html[data-scheme="dark"] #storybook-docs .docblock-argstable-head th,
+html[data-scheme="dark"] #storybook-docs .docblock-argstable-body td > div > p,
+html[data-scheme="dark"] #storybook-docs .docblock-argstable-body > tr > td:nth-child(2) p,
+html[data-scheme="dark"]
+  #storybook-docs
+  .docblock-argstable-body
+  > tr
+  > td:nth-child(2)
+  > div:nth-child(1)
+  > span,
+html[data-scheme="dark"] h1.fluent,
+html[data-scheme="dark"] h2.fluent,
+html[data-scheme="dark"] h3.fluent {
+  color: #ffffff;
+}
+
+html[data-scheme="dark"] #storybook-docs .sbdocs li:not(.sbdocs-preview li) {
+  color: #d6d6d6;
+}
+
+html[data-scheme="dark"] h1.fluent .fluent-version,
+html[data-scheme="dark"] #storybook-docs .docblock-argstable tbody tr td:nth-child(1) span {
+  color: #adadad;
+}
+
+html[data-scheme="dark"] #storybook-docs .sbdocs hr:not(.sbdocs-preview hr),
+html[data-scheme="dark"] #storybook-docs .sbdocs h2:not(.sbdocs-preview h2) {
+  border-top-color: #333333;
+}
+
+html[data-scheme="dark"] #storybook-docs thead.docblock-argstable-head {
+  border-bottom-color: #333333;
+}
+
+html[data-scheme="dark"] #storybook-docs .sbdocs-preview {
+  background: transparent;
+}
+
+html[data-scheme="dark"] #storybook-docs a.sbdocs-a,
+html[data-scheme="dark"] #storybook-docs .docblock-argstable-body > tr > td > div > div > button {
+  color: #479ef5;
+}
+
+html[data-scheme="dark"] #storybook-docs table:not(.docblock-argstable, .sbdocs-preview table) tr,
+html[data-scheme="dark"] #storybook-docs table:not(.docblock-argstable, .sbdocs-preview table) th,
+html[data-scheme="dark"] #storybook-docs table:not(.docblock-argstable, .sbdocs-preview table) td {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-scheme="dark"] #storybook-docs table:not(.docblock-argstable, .sbdocs-preview table) th {
+  color: #e0e0e0;
+}
+
+html[data-scheme="dark"] #storybook-docs code.sbdocs-code,
+html[data-scheme="dark"] #storybook-docs .sbdocs-p code,
+html[data-scheme="dark"] #storybook-docs .sbdocs-li code,
+html[data-scheme="dark"] #storybook-docs .docblock-argstable code,
+html[data-scheme="dark"] #storybook-docs .docblock-argstable tbody tr td:nth-child(3) > div > span,
+html[data-scheme="dark"]
+  #storybook-docs
+  .docblock-argstable-body
+  > tr
+  > td:nth-child(2)
+  > div:nth-child(2)
+  span,
+html[data-scheme="dark"]
+  #storybook-docs
+  .docblock-argstable-body
+  > tr
+  > td:nth-child(2)
+  > div:nth-child(1)
+  > div
+  > span {
+  background: #2e2e2e;
+  color: #ffffff;
+}
+
+html[data-scheme="dark"] #storybook-docs code:not(.sbdocs-preview code) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/*
+ * Storybook 10's markup. Fluent's rules target Storybook 9, which drew an
+ * example's "Show code" inside its frame, at the bottom right, as a tab;
+ * Storybook 10 puts the buttons in a bar under the frame. This puts them back
+ * where Fluent's are, looking as theirs do.
+ */
+#storybook-docs .sbdocs-preview:has(+ .sbdocs-preview-actions) {
+  margin-bottom: 0;
+}
+
+#storybook-docs .sbdocs-preview-actions {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  height: 0;
+  min-height: 0;
+  margin: 0 0 40px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+#storybook-docs .sbdocs-preview-actions > div {
+  position: absolute;
+  right: 31px;
+  bottom: 1px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 4px;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Fluent's rule for Storybook 9's tab bar, which now lands on the code. */
+#storybook-docs .docs-story + div > div:last-child {
+  right: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#storybook-docs .sbdocs-preview-actions button {
+  height: 29px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 5px 5px 0 0;
+  background: #f8f8f8;
+  color: #201f1e;
+  font-family:
+    "Segoe UI",
+    "Segoe UI Web (West European)",
+    -apple-system,
+    BlinkMacSystemFont,
+    Roboto,
+    "Helvetica Neue",
+    sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+#storybook-docs .sbdocs-preview-actions button svg {
+  display: none;
+}
+
+html[data-scheme="dark"] #storybook-docs .sbdocs-preview-actions button {
+  background: #2e2e2e;
+  color: #ffffff;
+}
+
+/*
+ * A component that is a whole page (StatusPage, `parameters.fullPage` in
+ * preview.tsx) fills the window; on a docs page each example would be as
+ * tall as the screen, so there it stands at a set height.
+ */
+#storybook-docs .sw-full-page > * {
+  min-height: 560px !important;
+}
