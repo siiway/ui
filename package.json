@@ -29,7 +29,7 @@
     "@fluentui/react-components": "^9.75.0",
     "@fluentui/react-icons": "^2.0.345",
     "@fluentui/storybook-llms-extractor": "0.0.4",
-    "@j178/prek": "0.5.9",
+    "@j178/prek": "0.5.10",
     "@siiway/ui-core": "workspace:*",
     "@siiway/ui-react": "workspace:*",
     "@storybook/addon-docs": "^10.6.8",
