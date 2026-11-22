@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest a component, a prop, or a change to the look.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you're trying to build, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The component, prop or hook you'd like, and how it would look or be used.
+    validations:
+      required: true
+  - type: textarea
+    id: apps
+    attributes:
+      label: Where you'd use it
+      description: The apps or pages that need it. A component joins the library when two apps need it, or when it's part of the look.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What you do now, or other approaches you considered.

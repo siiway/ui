@@ -32,4 +32,4 @@ routing and every component, live.
 
 ## License
 
-MIT. To work on the library, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+MIT. To work on the library, see [CONTRIBUTING.md](./.github/CONTRIBUTING.md).

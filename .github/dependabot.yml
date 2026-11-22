@@ -1,0 +1,33 @@
+# Weekly update PRs, for versions at least a week old. Dev dependencies only:
+# the packages' peers and dependencies are ranges we choose.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+    labels: ["ci"]
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    allow:
+      - dependency-type: development
+    commit-message:
+      prefix: build
+      include: scope
+    labels: ["dependencies"]
+    groups:
+      dev:
+        update-types: [minor, patch]

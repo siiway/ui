@@ -1,0 +1,57 @@
+name: Bug report
+description: A component, hook or theme doesn't work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security issues go to a [private advisory](https://github.com/siiway/ui/security/advisories/new), not here.
+  - type: input
+    id: component
+    attributes:
+      label: Component or hook
+      placeholder: DataList
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: The smallest code that shows it, or a link to one (StackBlitz, a repo).
+      render: tsx
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      value: |
+        @siiway/ui-react:
+        react:
+        @fluentui/react-components:
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it happens
+      options:
+        - In the browser
+        - In server rendering
+        - Both
+        - Only on ui.siiway.org
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors and screenshots
+      description: Console errors, the browser, and light or dark, English or Chinese if it matters.

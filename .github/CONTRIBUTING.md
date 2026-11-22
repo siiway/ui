@@ -1,7 +1,7 @@
 # Contributing
 
 You need [Bun](https://bun.sh) 1.4. The rules the library follows are in
-[AGENTS.md](./AGENTS.md).
+[AGENTS.md](../AGENTS.md).
 
 | Command             | What it does                            |
 | ------------------- | --------------------------------------- |

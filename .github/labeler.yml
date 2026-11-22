@@ -16,11 +16,19 @@ i18n:
 docs:
   - changed-files:
       - any-glob-to-any-file:
-          ["docs/**", ".storybook/**", "README*.md", "CONTRIBUTING.md", "AGENTS.md"]
+          [
+            "docs/**",
+            ".storybook/**",
+            "README*.md",
+            "AGENTS.md",
+            ".github/*.md",
+            ".github/ISSUE_TEMPLATE/**",
+          ]
 
 ci:
   - changed-files:
-      - any-glob-to-any-file: [".github/workflows/**", "prek.toml", "wrangler.jsonc"]
+      - any-glob-to-any-file:
+          [".github/workflows/**", ".github/dependabot.yml", "prek.toml", "wrangler.jsonc"]
 
 dependencies:
   - changed-files:
