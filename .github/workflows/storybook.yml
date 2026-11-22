@@ -1,8 +1,8 @@
 name: Storybook
 
-# Builds the Storybook on push to main and deploys it to ui.siiway.org
-# (wrangler.jsonc). Only the deploy job, which runs nothing but
-# wrangler, gets the token.
+# Builds the Storybook and deploys it to ui.siiway.org (wrangler.jsonc) when
+# a push to main changes what it's built from. Only the deploy job, which
+# runs nothing but wrangler, gets the token.
 #
 # Setup: CLOUDFLARE_API_TOKEN in the `production` environment, with Workers
 # Scripts:Edit, and Workers Routes:Edit and Zone:Read on siiway.org.
@@ -10,6 +10,17 @@ name: Storybook
 on:
   push:
     branches: [main]
+    paths:
+      - "docs/**"
+      - ".storybook/**"
+      - "packages/*/src/**"
+      - "packages/*/package.json"
+      - "packages/*/tsconfig.json"
+      - "tsconfig.base.json"
+      - "package.json"
+      - "bun.lock"
+      - "wrangler.jsonc"
+      - ".github/workflows/storybook.yml"
   workflow_dispatch:
 
 # Never cancel a deploy halfway.
