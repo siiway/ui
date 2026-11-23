@@ -1,7 +1,10 @@
 export {
+  SCHEME_COOKIE,
   THEME_STORAGE_KEY,
   isThemeMode,
   resolveScheme,
+  schemeCookie,
+  schemeFromRequest,
   type Scheme,
   type ThemeMode,
 } from "./scheme.js";

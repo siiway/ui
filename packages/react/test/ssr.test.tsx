@@ -191,13 +191,19 @@ test("a page provider takes the canvas", () => {
   expect(own.html).toContain("background-color:red");
 });
 
-test("useThemeMode renders the default mode, drawn light, on the server", () => {
+test("useThemeMode renders the default mode, drawn light or in initialScheme, on the server", () => {
   function Probe(options: ui.ThemeModeOptions) {
     const { mode, scheme } = ui.useThemeMode(options);
     return <p>{`${mode}/${scheme}`}</p>;
   }
   expect(renderToString(<Probe />)).toContain("system/light");
   expect(renderToString(<Probe defaultMode="dark" />)).toContain("dark/dark");
+  // What the server read from the scheme cookie, whatever the default mode.
+  expect(renderToString(<Probe initialScheme="dark" />)).toContain("system/dark");
+  expect(renderToString(<Probe defaultMode="light" initialScheme="dark" />)).toContain(
+    "light/dark",
+  );
+  expect(renderToString(<Probe initialScheme={null} />)).toContain("system/light");
 });
 
 test("the top bar's menu button can come before the brand", () => {

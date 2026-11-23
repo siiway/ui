@@ -2,19 +2,22 @@
 // kept in localStorage under the key schemeBootScript reads, and follows
 // other tabs; `system` follows the OS setting as it changes.
 //
-// On the server, and while hydrating, it gives `defaultMode` drawn light: the
+// On the server, and while hydrating, it gives `defaultMode`, drawn in
+// `initialScheme` (what the server read from the scheme cookie) or light: the
 // server can't see the stored choice or the OS. The client then moves to the
 // real scheme. useSyncExternalStore makes that switch without a hydration
-// mismatch.
+// mismatch. With `cookie`, it keeps the scheme cookie in step for the next
+// request.
 
 import {
   THEME_STORAGE_KEY,
   isThemeMode,
   resolveScheme,
+  schemeCookie,
   type Scheme,
   type ThemeMode,
 } from "@siiway/ui-core";
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
@@ -58,11 +61,37 @@ function serverDark() {
   return false;
 }
 
+// True once the page is the client's: false on the server and while
+// hydrating, where the server's scheme must be drawn.
+function subscribeNothing() {
+  return () => {};
+}
+
+function clientTrue() {
+  return true;
+}
+
+function serverFalse() {
+  return false;
+}
+
 export interface ThemeModeOptions {
   /** The `localStorage` key; give `schemeBootScript` the same. Defaults to `"siiway-theme"`. */
   storageKey?: string;
   /** Until a choice is stored, and on the server. Defaults to `"system"`. */
   defaultMode?: ThemeMode;
+  /**
+   * A cookie to keep the scheme in, for the server to render the next
+   * request in (`schemeFromRequest`), such as `SCHEME_COOKIE`. Give
+   * `schemeBootScript` the same.
+   */
+  cookie?: string;
+  /**
+   * The scheme the server rendered in, on the server and again on the client:
+   * drawn until hydration ends. `schemeFromRequest`'s answer; with null,
+   * light.
+   */
+  initialScheme?: Scheme | null;
 }
 
 export interface ThemeModeState {
@@ -77,10 +106,26 @@ export interface ThemeModeState {
 export function useThemeMode({
   storageKey = THEME_STORAGE_KEY,
   defaultMode = "system",
+  cookie,
+  initialScheme,
 }: ThemeModeOptions = {}): ThemeModeState {
   const stored = useSyncExternalStore(subscribeMode, () => readStored(storageKey), serverStored);
   const dark = useSyncExternalStore(subscribeSystem, systemDark, serverDark);
+  const hydrated = useSyncExternalStore(subscribeNothing, clientTrue, serverFalse);
   const mode = isThemeMode(stored) ? stored : defaultMode;
+  const live = resolveScheme(mode, dark);
+  const scheme = hydrated || !initialScheme ? live : initialScheme;
+
+  // Once the client knows the real scheme, and whenever it changes: the
+  // choice, another tab's, or the OS setting.
+  useEffect(() => {
+    if (!cookie || !hydrated) return;
+    try {
+      document.cookie = schemeCookie(cookie, live, window.isSecureContext);
+    } catch {
+      // A sandboxed frame has no cookies.
+    }
+  }, [cookie, hydrated, live]);
 
   const setMode = useCallback(
     (next: ThemeMode) => {
@@ -94,5 +139,5 @@ export function useThemeMode({
     [storageKey],
   );
 
-  return { mode, setMode, scheme: resolveScheme(mode, dark) };
+  return { mode, setMode, scheme };
 }

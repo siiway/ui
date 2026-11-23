@@ -42,7 +42,9 @@ const { mode, setMode, scheme } = useThemeMode();
 - `scheme` is what to draw now. For `system`, it follows the OS setting as
   it changes.
 - Options: `storageKey` (default `"siiway-theme"`) and `defaultMode`, used
-  until a choice is stored (default `"system"`).
+  until a choice is stored (default `"system"`). For a server that renders
+  each request, `cookie` and `initialScheme`: see
+  [On the server](#on-the-server).
 
 `page` makes the outermost provider the page. It and `<html>` take the
 canvas colour, the body loses the browser's 8px margin, and `<html>` gets
@@ -87,16 +89,48 @@ export default defineConfig({
 });
 ```
 
-Give it the same `storageKey` and `defaultMode` as `useThemeMode`. Under a
-Content Security Policy, allow the script by its hash.
+Give it the same `storageKey`, `defaultMode` and `cookie` as `useThemeMode`.
+Under a Content Security Policy, allow the script by its hash.
 
 #### On the server
 
 The server can't see the stored choice or the OS setting, so `useThemeMode`
 renders `defaultMode`, drawn light, and the client moves to the real scheme
-as it hydrates. The boot script keeps the page's background right
-meanwhile. To render the right scheme on the server, keep the choice in a
-cookie instead, and pass the scheme to `<UiProvider scheme>` yourself.
+as it hydrates. The boot script keeps the page's background right, but cards
+and controls are light until then. A pre-rendered page has to live with
+that. A server that renders each request can draw the person's scheme from a
+cookie:
+
+1. Give `schemeBootScript` and `useThemeMode` a `cookie`, such as
+   `SCHEME_COOKIE` (`"siiway-scheme"`). The script writes the scheme there on
+   every load, and the hook whenever the choice or the OS setting changes.
+2. On the server, `schemeFromRequest()` reads it, or on a first visit the
+   browser's `Sec-CH-Prefers-Color-Scheme` hint, and gives `"light"`,
+   `"dark"` or null.
+3. Render with that as `initialScheme`, and give the client the same value
+   with the page's data, so it hydrates in the scheme the server drew.
+
+```tsx
+// On the server, for each request
+const initialScheme = schemeFromRequest(
+  request.headers.get("cookie"),
+  request.headers.get("sec-ch-prefers-color-scheme"),
+);
+
+// In the app, on the server and the client
+const { mode, setMode, scheme } = useThemeMode({
+  cookie: SCHEME_COOKIE,
+  initialScheme,
+});
+```
+
+Chromium browsers send the hint once the server asks:
+`Accept-CH: Sec-CH-Prefers-Color-Scheme`, with `Critical-CH` naming it too
+for the very first request. A cache in front must vary by both:
+`Vary: Cookie, Sec-CH-Prefers-Color-Scheme`. When the OS setting changed
+since the last visit, the server draws the old scheme and the client moves
+to the new one as it hydrates. The cookie is `secure` in a secure context, so
+a `__Host-` name works.
 
 ### In React
 
@@ -150,20 +184,23 @@ Fluent's web components read the same tokens as CSS variables
 `@fluentui/tokens` with `brandRamp(accent)` and spread
 `themeOverrides(scheme)` over it.
 
-| Export                 | What it is                                                         |
-| ---------------------- | ------------------------------------------------------------------ |
-| `NEUTRAL[scheme]`      | Neutral backgrounds, foregrounds, strokes and loading placeholders |
-| `RADII`                | Corner radii                                                       |
-| `SHADOWS[scheme]`      | Shadows for floating surfaces                                      |
-| `CANVAS[scheme]`       | The page backdrop colour                                           |
-| `themeOverrides()`     | All of the above for one scheme, ready to spread over a theme      |
-| `brandRamp(accent)`    | The 16-shade brand ramp                                            |
-| `DEFAULT_ACCENT`       | `#0078d4`                                                          |
-| `normalizeAccent()`    | Accent normalizing as described above                              |
-| `normalizeHexColor()`  | Validates a colour someone typed: 3 or 6 hex digits, `#` optional  |
-| `hexToHsl`, `hslToHex` | HSL conversion, unrounded                                          |
-| `hexToHsv`, `hsvToHex` | HSV conversion, for colour pickers                                 |
-| `schemeBootScript()`   | The script for `<head>`, [above](#before-the-app-loads)            |
-| `resolveScheme()`      | `(mode, systemDark)` to the scheme to draw                         |
-| `isThemeMode()`        | Whether a stored value is `system`, `light` or `dark`              |
-| `THEME_STORAGE_KEY`    | `"siiway-theme"`, the default `storageKey`                         |
+| Export                 | What it is                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| `NEUTRAL[scheme]`      | Neutral backgrounds, foregrounds, strokes and loading placeholders                         |
+| `RADII`                | Corner radii                                                                               |
+| `SHADOWS[scheme]`      | Shadows for floating surfaces                                                              |
+| `CANVAS[scheme]`       | The page backdrop colour                                                                   |
+| `themeOverrides()`     | All of the above for one scheme, ready to spread over a theme                              |
+| `brandRamp(accent)`    | The 16-shade brand ramp                                                                    |
+| `DEFAULT_ACCENT`       | `#0078d4`                                                                                  |
+| `normalizeAccent()`    | Accent normalizing as described above                                                      |
+| `normalizeHexColor()`  | Validates a colour someone typed: 3 or 6 hex digits, `#` optional                          |
+| `hexToHsl`, `hslToHex` | HSL conversion, unrounded                                                                  |
+| `hexToHsv`, `hsvToHex` | HSV conversion, for colour pickers                                                         |
+| `schemeBootScript()`   | The script for `<head>`, [above](#before-the-app-loads)                                    |
+| `resolveScheme()`      | `(mode, systemDark)` to the scheme to draw                                                 |
+| `isThemeMode()`        | Whether a stored value is `system`, `light` or `dark`                                      |
+| `THEME_STORAGE_KEY`    | `"siiway-theme"`, the default `storageKey`                                                 |
+| `schemeFromRequest()`  | `(cookieHeader, hint?, cookie?)` to the scheme to render, or null, [above](#on-the-server) |
+| `SCHEME_COOKIE`        | `"siiway-scheme"`, a name for the scheme cookie                                            |
+| `schemeCookie()`       | `(name, scheme, secure)` to the cookie as `document.cookie` takes it                       |
