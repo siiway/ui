@@ -239,7 +239,7 @@ export function TopBar({
       )}
       <div className={styles.spacer} />
       <div className={styles.actions}>
-        {menuPosition === "end" && menu}
+        {menuPosition !== "start" && menu}
         {children}
       </div>
     </header>
