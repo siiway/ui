@@ -7,8 +7,9 @@ import { Button, Text, Title2, makeStyles, mergeClasses, tokens } from "@fluentu
 import { ChevronRight16Regular } from "@fluentui/react-icons";
 import type { ReactNode } from "react";
 import { useCanvasClass } from "../provider/canvas.js";
-import { UiLink, useUiNavigate } from "../provider/context.js";
+import { UiLink } from "../provider/context.js";
 import { BrandMark } from "./BrandMark.js";
+import { ButtonLink } from "./ButtonLink.js";
 
 const useStyles = makeStyles({
   page: {
@@ -144,7 +145,6 @@ export function StatusPage({
 }: StatusPageProps) {
   const styles = useStyles();
   const canvas = useCanvasClass();
-  const navigate = useUiNavigate();
   return (
     <div className={mergeClasses(styles.page, canvas)}>
       <div className={styles.card}>
@@ -163,13 +163,13 @@ export function StatusPage({
         <div className={styles.actions}>
           {back && <Button onClick={() => window.history.back()}>{back}</Button>}
           {secondary?.map((action) => (
-            <Button key={action.to} onClick={() => navigate(action.to)}>
+            <ButtonLink key={action.to} to={action.to}>
               {action.label}
-            </Button>
+            </ButtonLink>
           ))}
-          <Button appearance="primary" onClick={() => navigate(primary.to)}>
+          <ButtonLink appearance="primary" to={primary.to}>
             {primary.label}
-          </Button>
+          </ButtonLink>
         </div>
         {links && links.length > 0 && (
           <div className={styles.links}>

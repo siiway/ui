@@ -199,3 +199,28 @@ test("useThemeMode renders the default mode, drawn light, on the server", () => 
   expect(renderToString(<Probe />)).toContain("system/light");
   expect(renderToString(<Probe defaultMode="dark" />)).toContain("dark/dark");
 });
+
+test("buttons that open a page are links through the app's router", () => {
+  const router: UiRouter = {
+    Link: ({ to, state: _state, ...rest }) => <a data-app-router href={`/app${to}`} {...rest} />,
+    useNavigate: () => () => {},
+  };
+  const back = render(<ui.BackButton to="/apps">Apps</ui.BackButton>, { scheme: "light", router });
+  expect(back.html).toMatch(/<a [^>]*href="\/app\/apps"[^>]*class="fui-Button /);
+
+  const status = render(
+    <ui.StatusPage
+      mark="404"
+      title="Not found"
+      description="Gone."
+      back="Go back"
+      secondary={[{ label: "Search", to: "/search" }]}
+      primary={{ label: "Home", to: "/" }}
+    />,
+    { scheme: "light", router },
+  );
+  expect(status.html).toContain('href="/app/search"');
+  expect(status.html).toContain('href="/app/"');
+  // Going back has no address of its own: it stays a button.
+  expect(status.html).toMatch(/<button[^>]*>Go back<\/button>/);
+});
