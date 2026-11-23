@@ -237,3 +237,21 @@ test("buttons that open a page are links through the app's router", () => {
   // Going back has no address of its own: it stays a button.
   expect(status.html).toMatch(/<button[^>]*>Go back<\/button>/);
 });
+
+// Type checks, run by the typecheck: a palette's rows carry the app's data
+// back, and a query it holds comes with the callback that changes it.
+test("a palette's rows carry data, and its query comes with onQueryChange", () => {
+  const base = { open: true, onOpenChange() {}, onQueryChange() {}, placeholder: "Search" };
+  const picked: number[] = [];
+  const palette = (
+    <ui.CommandPalette
+      {...base}
+      groups={[{ items: [{ id: "a", title: "A", data: 1 }] }]}
+      onSelect={(item) => item.data !== undefined && picked.push(item.data)}
+    />
+  );
+  const { onQueryChange: _, ...deaf } = base;
+  // @ts-expect-error: a query that typing can't change
+  const stuck = <ui.CommandPalette {...deaf} groups={[]} onSelect={() => {}} query="a" />;
+  expect([palette, stuck]).toHaveLength(2);
+});

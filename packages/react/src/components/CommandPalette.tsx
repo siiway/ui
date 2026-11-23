@@ -1,7 +1,7 @@
 // Ctrl K search, as Prism and Vellum both have it: a dialog pinned near the
 // top of the screen (so the list grows downwards and the field stays put), a
 // field, grouped results and the keys to use them. ↑ ↓ move, Enter opens,
-// Esc closes. The app does the searching: it holds the query and gives the
+// Esc closes. The app does the searching: it hears the query and gives the
 // groups to show.
 
 import {
@@ -12,6 +12,7 @@ import {
   makeStyles,
   mergeClasses,
   tokens,
+  useIsomorphicLayoutEffect,
 } from "@fluentui/react-components";
 import { ArrowEnterLeftRegular, DismissRegular, SearchRegular } from "@fluentui/react-icons";
 import {
@@ -185,9 +186,11 @@ const useStyles = makeStyles({
   },
 });
 
-export interface CommandItem {
+export interface CommandItem<T = unknown> {
   /** Unique within the palette. */
   id: string;
+  /** Anything of yours, handed back with the row to `onSelect`: what the row stands for. */
+  data?: T;
   /** The row's text. Wrap matched words in `<mark>` to highlight them. */
   title: ReactNode;
   /** One line under the title: where the result is, what matched. */
@@ -203,31 +206,41 @@ export interface CommandItem {
   action?: ReactNode;
 }
 
-export interface CommandGroup {
+export interface CommandGroup<T = unknown> {
   /** The group's heading. With none, the items follow the group before. */
   label?: ReactNode;
   /** A button beside the heading, such as "Clear" for recent searches. */
   action?: ReactNode;
   /** The group's rows. A group without any isn't shown. */
-  items: CommandItem[];
+  items: CommandItem<T>[];
 }
 
-export interface CommandPaletteProps {
+export interface CommandPaletteProps<T = unknown> {
   /** Whether the palette is open. */
   open: boolean;
   /** Called with the new state, as when Esc or the close button closes it. */
   onOpenChange: (open: boolean) => void;
-  /** The field's text. Clear it when you open the palette if each search should start anew. */
-  query: string;
-  /** Called with the field's text as the reader types. */
+  /**
+   * The field's text, if you hold it: clear it as you open the palette to
+   * start a new search. Leave it out and the palette holds it, emptying the
+   * field each time it opens.
+   */
+  query?: string;
+  /**
+   * Called with the field's text as it changes. Without `query`, that
+   * includes the empty field of each opening.
+   */
   onQueryChange: (query: string) => void;
   /**
    * What to show for the query: `{ label?, action?, items }` each. `action`
    * is a button beside the label, such as "Clear".
    */
-  groups: CommandGroup[];
-  /** Called on Enter, or a click on a row. Close the palette here when the row leads away. */
-  onSelect: (item: CommandItem) => void;
+  groups: CommandGroup<T>[];
+  /**
+   * Called on Enter, or a click on a row, with the row and its `data`. Close
+   * the palette here when the row leads away.
+   */
+  onSelect: (item: CommandItem<T>) => void;
   /** The field's placeholder and accessible name. */
   placeholder: string;
   /** Shows a spinner in the field while results are on their way. */
@@ -238,7 +251,7 @@ export interface CommandPaletteProps {
   status?: ReactNode;
 }
 
-export function CommandPalette({
+export function CommandPalette<T = unknown>({
   open,
   onOpenChange,
   query,
@@ -249,7 +262,7 @@ export function CommandPalette({
   loading,
   empty,
   status,
-}: CommandPaletteProps) {
+}: CommandPaletteProps<T>) {
   const styles = useStyles();
   const strings = useUiStrings();
   const listId = useId();
@@ -274,6 +287,34 @@ export function CommandPalette({
     flat.findIndex((item) => item.id === activeId),
   );
   const active = flat[activeIndex];
+
+  // Each opening starts at the top row. Without `query`, the palette holds
+  // the text, and each opening starts a new search: the field empties as the
+  // palette opens, and the app hears of it before the palette paints, to give
+  // the groups for the empty text.
+  const controlled = query !== undefined;
+  const [ownQuery, setOwnQuery] = useState("");
+  const text = controlled ? query : ownQuery;
+  const [wasOpen, setWasOpen] = useState(false);
+  const [emptied, setEmptied] = useState(0);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setActiveId(null);
+      if (!controlled) {
+        setOwnQuery("");
+        setEmptied(emptied + 1);
+      }
+    }
+  }
+  // Once per emptying: not again when Strict Mode reruns the effect, nor on
+  // every render, as onQueryChange may be a new function each time.
+  const reported = useRef(0);
+  useIsomorphicLayoutEffect(() => {
+    if (reported.current === emptied) return;
+    reported.current = emptied;
+    onQueryChange("");
+  }, [emptied]);
 
   useEffect(() => {
     if (!active) return;
@@ -314,8 +355,9 @@ export function CommandPalette({
             placeholder={placeholder}
             autoComplete="off"
             spellCheck={false}
-            value={query}
+            value={text}
             onChange={(e) => {
+              if (!controlled) setOwnQuery(e.target.value);
               onQueryChange(e.target.value);
               setActiveId(null);
             }}
