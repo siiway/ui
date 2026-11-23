@@ -52,12 +52,19 @@ tint of the accent, and scrollbars are thin, with a neutral thumb on a clear
 track (in Chromium and Safari; Firefox keeps its own). Leave it off nested
 providers, such as a preview.
 
+For parts drawn on the canvas that must be opaque, such as a sticky bar or a
+drawer, `<html>` also gets the canvas as `--siiway-canvas`:
+`background: var(--siiway-canvas)`. With Griffel, `useCanvasClass()` gives a
+class with the canvas in the provider's scheme. Each
+`<meta name="theme-color">` takes the canvas too, so a phone's address bar
+matches the page.
+
 #### Before the app loads
 
 Until the app's JavaScript runs, the browser shows a white page, which
 flashes before a dark one. `schemeBootScript()` returns a short script that
-draws `<html>` in the stored scheme first. Put it at the top of `<head>`; with
-Vite:
+draws `<html>` in the stored scheme first, `theme-color` included. Put it in
+`<head>`, after `<meta name="theme-color">` if you have one; with Vite:
 
 ```ts
 // vite.config.ts
@@ -72,7 +79,7 @@ export default defineConfig({
         {
           tag: "script",
           children: schemeBootScript(),
-          injectTo: "head-prepend",
+          injectTo: "head",
         },
       ],
     },

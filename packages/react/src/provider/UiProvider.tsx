@@ -16,7 +16,8 @@ export interface UiProviderProps extends Omit<FluentProviderProps, "theme"> {
   /**
    * This provider is the page. It takes the canvas colour, removes the
    * body's margin, and draws `<html>` in the scheme (`data-scheme`,
-   * `color-scheme`, the canvas background), as `schemeBootScript` does
+   * `color-scheme`, the canvas background, `--siiway-canvas`) and each
+   * `<meta name="theme-color">` in the canvas, as `schemeBootScript` does
    * before the app loads. Selected text takes a tint of the accent, and
    * scrollbars are thin. Set it on the app's outermost provider only.
    */
@@ -83,18 +84,28 @@ const usePageStyles = makeStaticStyles({
 });
 
 // <html> in the page's scheme, for what lies outside the provider: the
-// overscroll area, the scrollbars, form controls' native parts.
+// overscroll area, the scrollbars, form controls' native parts, the app's CSS
+// (--siiway-canvas) and the browser's own bar (theme-color).
 function PageScheme({ scheme }: { scheme: Scheme }) {
   usePageStyles();
   useIsomorphicLayoutEffect(() => {
     const root = document.documentElement;
+    const canvas = CANVAS[scheme];
     root.setAttribute("data-scheme", scheme);
     root.style.colorScheme = scheme;
-    root.style.backgroundColor = CANVAS[scheme];
+    root.style.backgroundColor = canvas;
+    root.style.setProperty("--siiway-canvas", canvas);
+    const metas = Array.from(
+      document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'),
+    );
+    const colors = metas.map((meta) => meta.content);
+    for (const meta of metas) meta.content = canvas;
     return () => {
       root.removeAttribute("data-scheme");
       root.style.removeProperty("color-scheme");
       root.style.removeProperty("background-color");
+      root.style.removeProperty("--siiway-canvas");
+      metas.forEach((meta, i) => (meta.content = colors[i]!));
     };
   }, [scheme]);
   return null;

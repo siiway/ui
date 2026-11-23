@@ -14,12 +14,13 @@ function literal(value: string): string {
 }
 
 /**
- * JavaScript for an inline `<script>` at the top of the page's `<head>`. Before
- * anything renders, it reads the stored choice, resolves `system` with the
- * OS setting, and draws `<html>` in that scheme: `data-scheme`,
- * `color-scheme` and the canvas background. Without it, a dark page is white
- * until the app's JavaScript runs. `<UiProvider page>` keeps `<html>` the
- * same way afterwards.
+ * JavaScript for an inline `<script>` in the page's `<head>`, after
+ * `<meta name="theme-color">` if there is one. Before anything renders, it
+ * reads the stored choice, resolves `system` with the OS setting, and draws
+ * `<html>` in that scheme: `data-scheme`, `color-scheme`, the canvas
+ * background and `--siiway-canvas`. Each `theme-color` takes the canvas.
+ * Without it, a dark page is white until the app's JavaScript runs.
+ * `<UiProvider page>` keeps `<html>` the same way afterwards.
  */
 export function schemeBootScript({
   storageKey = THEME_STORAGE_KEY,
@@ -32,9 +33,12 @@ export function schemeBootScript({
     `if(m!=="system"&&m!=="light"&&m!=="dark")m=${literal(defaultMode)};`,
     'var s=m!=="system"?m:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";',
     "var r=document.documentElement;",
+    `var c=s==="dark"?${literal(CANVAS.dark)}:${literal(CANVAS.light)};`,
     'r.setAttribute("data-scheme",s);',
     "r.style.colorScheme=s;",
-    `r.style.backgroundColor=s==="dark"?${literal(CANVAS.dark)}:${literal(CANVAS.light)};`,
+    "r.style.backgroundColor=c;",
+    'r.style.setProperty("--siiway-canvas",c);',
+    `for(var t=document.querySelectorAll(${literal('meta[name="theme-color"]')}),i=0;i<t.length;i++)t[i].setAttribute("content",c);`,
     "})();",
   ].join("");
 }
