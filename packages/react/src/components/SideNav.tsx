@@ -107,8 +107,9 @@ export interface SideNavItem {
    */
   active?: boolean;
   /**
-   * Current on its own path only, not on the pages below it: for `/`, or an
-   * item whose pages are its `items`.
+   * Current on its own path only, not on the pages below it: for `/`, say.
+   * An item with `items` has it unless set to false: its pages are listed
+   * under it, and show themselves.
    */
   end?: boolean;
   /** Drawn quieter: grey, at regular weight. For a way out of a section, say. */
@@ -222,7 +223,7 @@ function ItemLink({
   styles: Styles;
   children: ReactNode;
 }) {
-  const matched = useUiMatch(to, item.end ?? false);
+  const matched = useUiMatch(to, item.end ?? branch);
   const active = item.active ?? matched;
   return (
     <UiLink

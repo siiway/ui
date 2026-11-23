@@ -70,7 +70,6 @@ export const Nested = () => {
             {
               label: t("Sign-in", "登录"),
               to: "/docs/sign-in",
-              end: true,
               items: [
                 { label: "OAuth", to: "/docs/sign-in/oauth" },
                 { label: t("Passkeys", "通行密钥"), to: "/docs/sign-in/passkeys" },
@@ -92,7 +91,7 @@ Nested.parameters = {
   docs: {
     description: {
       story:
-        "An item's `items` go under it, indented. An item without `to`, such as Webhooks here, is a heading for its `items`. Sign-in has `end`, so it isn't current on the pages under it.",
+        "An item's `items` go under it, indented. An item without `to`, such as Webhooks here, is a heading for its `items`. Sign-in has `items`, so it's current on its own page only, not on theirs.",
     },
   },
 };

@@ -276,10 +276,18 @@ test("a side nav asks the router which page is current, unless told", () => {
             { label: "Teams", to: "/teams", active: true },
           ],
         },
+        {
+          items: [
+            // Its pages are under it, so it isn't current on them...
+            { label: "Listed", to: "/apps", items: [{ label: "One", to: "/apps/2" }] },
+            // ...unless it says so.
+            { label: "Section", to: "/apps", end: false, items: [{ label: "Two", to: "/apps/3" }] },
+          ],
+        },
       ]}
     />,
     { scheme: "light", router },
   );
   const current = [...html.matchAll(/<a [^>]*aria-current="page"[^>]*>([^<]*)/g)].map((m) => m[1]);
-  expect(current).toEqual(["Everything", "Apps", "Teams"]);
+  expect(current).toEqual(["Everything", "Apps", "Teams", "Section"]);
 });
