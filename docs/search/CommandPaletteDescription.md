@@ -3,6 +3,14 @@ grouped results and the keys to use them. ↑ and ↓ move, Enter opens, Esc
 closes. You do the searching (what matches, how it's ranked, where a
 result leads) and hand the palette the results.
 
+## The query
+
+Leave out `query` and the palette holds the field's text, emptying it each
+time it opens; `onQueryChange` tells you the text to search with, including
+the empty text of a new opening. Keep the palette mounted while it's closed,
+so it fades out as it closes. Pass `query` to hold the text yourself, as
+when picking a recent search fills it in.
+
 ## Rows
 
 Each group in `groups` lists its rows in `items`. A row (`CommandItem`) is:
@@ -15,6 +23,7 @@ Each group in `groups` lists its rows in `items`. A row (`CommandItem`) is:
 | `excerpt`  | `ReactNode` | Up to two lines: a passage of the page.                                                           |
 | `icon`     | `ReactNode` | Shown before the text.                                                                            |
 | `action`   | `ReactNode` | A button at the row's end, such as "Remove" on a recent search. Clicking it doesn't open the row. |
+| `data`     | `T`         | Anything of yours, handed back with the row to `onSelect`: what the row stands for.               |
 
 Wrap matched words in `<mark>` in the title or excerpt to highlight them.
 

@@ -16,26 +16,22 @@ import descriptionMd from "./CommandPaletteDescription.md?raw";
 // The stories open the palette from a SearchButton only: Ctrl K
 // (useSearchShortcut) would open every palette on the page at once.
 
+// Without `query`, the palette empties the field each time it opens; the
+// app only hears the text, to search with it.
 export const Default = () => {
   const t = useText();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<string | null>(null);
   const pages = [
-    { id: "apps", title: t("Apps", "应用"), icon: <AppsRegular /> },
-    { id: "teams", title: t("Teams", "团队"), icon: <PeopleTeamRegular /> },
-    { id: "settings", title: t("Settings", "设置"), icon: <SettingsRegular /> },
+    { id: "apps", title: t("Apps", "应用"), icon: <AppsRegular />, data: "/apps" },
+    { id: "teams", title: t("Teams", "团队"), icon: <PeopleTeamRegular />, data: "/teams" },
+    { id: "settings", title: t("Settings", "设置"), icon: <SettingsRegular />, data: "/settings" },
   ];
   const q = query.trim().toLowerCase();
   return (
     <Demo layout="row">
-      <SearchButton
-        onClick={() => {
-          setQuery("");
-          setOpen(true);
-        }}
-        shortcut={false}
-      />
+      <SearchButton onClick={() => setOpen(true)} shortcut={false} />
       {picked && (
         <Text size={200} font="monospace">
           {picked}
@@ -44,7 +40,6 @@ export const Default = () => {
       <CommandPalette
         open={open}
         onOpenChange={setOpen}
-        query={query}
         onQueryChange={setQuery}
         placeholder={t("Search pages…", "搜索页面…")}
         groups={[
@@ -55,7 +50,8 @@ export const Default = () => {
         ]}
         empty={<Text>{t(`No results for “${query}”`, `没有与“${query}”匹配的结果`)}</Text>}
         onSelect={(item) => {
-          setPicked(item.id);
+          // Where the row leads, from its data.
+          setPicked(item.data ?? null);
           setOpen(false);
         }}
       />
@@ -110,7 +106,6 @@ export const SearchResults = () => {
       <CommandPalette
         open={open}
         onOpenChange={setOpen}
-        query={query}
         onQueryChange={setQuery}
         placeholder={t("Search the docs…", "搜索文档…")}
         groups={[
@@ -210,7 +205,7 @@ Recent.parameters = {
   docs: {
     description: {
       story:
-        "Before a search, show recent ones. The group's `action` clears them, and each row's `action` removes one without opening the row.",
+        "Before a search, show recent ones. The group's `action` clears them, and each row's `action` removes one without opening the row. Picking one searches for it again by setting `query`, so here the app holds the field's text.",
     },
   },
 };
