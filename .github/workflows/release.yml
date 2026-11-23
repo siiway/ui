@@ -1,8 +1,9 @@
 name: Release
 
 # While there are changesets, keeps a "chore: release" PR open; merging it
-# publishes the new versions to npm and creates the GitHub release. The
-# publish job runs none of the repository's code.
+# publishes the new versions to npm, creates the GitHub release and deploys
+# the docs for it (storybook.yml). The publish job runs none of the
+# repository's code.
 #
 # Setup: each package's trusted publisher on npmjs.com (release.yml,
 # environment npm, allow `npm publish`), and Actions allowed to create PRs.
@@ -114,3 +115,13 @@ jobs:
             gh release create "v${VERSION}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
               --title "v${VERSION}" --notes-file release/notes.md
           fi
+
+  # ui.siiway.org shows the published version: the docs at this commit,
+  # deployed from main only.
+  docs:
+    needs: publish
+    permissions:
+      contents: read
+    uses: ./.github/workflows/storybook.yml
+    with:
+      site: true

@@ -1,0 +1,160 @@
+name: Preview
+
+# Deploys a branch's Storybook build (storybook.yml) as the Worker's Preview
+# named after the branch, at <branch>.preview.ui.siiway.org, and deletes it
+# with the branch. This file always runs from main, so a branch can change
+# what its Preview shows but not how it's deployed, and the token stays with
+# main. The deploy runs nothing from the build: wrangler and its config come
+# from main.
+#
+# Setup: CLOUDFLARE_API_TOKEN (as in storybook.yml) in the `preview`
+# environment, for main only.
+
+on:
+  # zizmor: ignore[dangerous-triggers] main's code; the build is only uploaded.
+  workflow_run:
+    workflows: [Storybook]
+    types: [completed]
+  delete:
+
+permissions: {}
+
+jobs:
+  # Brings the branch's Preview in line with the branch as it is now, not as
+  # it was when the event happened: GitHub keeps only the newest of the runs
+  # queued for a branch, and whichever is kept does the right thing.
+  sync:
+    # A build in this repository, or a deleted branch. The site's build runs
+    # inside Release, so it never comes here.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'delete' && github.event.ref_type == 'branch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # the build, and the branch's other builds
+      statuses: write # the Preview's link, on the branch's commit
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    # A branch's deploys and its delete take turns, never cancelled halfway.
+    concurrency:
+      group: preview-${{ github.event.workflow_run.head_branch || github.event.ref }}
+      cancel-in-progress: false
+    env:
+      BRANCH: ${{ github.event.workflow_run.head_branch || github.event.ref }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+    steps:
+      # A deleted branch loses its Preview. Otherwise only the branch's newest
+      # build deploys: an older one, finished late or rerun, would roll it
+      # back, and a newer one deploys after this.
+      - name: Decide what to do
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The branch as a hostname label, as Cloudflare names the Preview,
+          # so that the delete finds it.
+          name=$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9]+/-/g; s/^-//' | cut -c1-63 | sed -E 's/-+$//')
+          if [ -z "$name" ]; then
+            echo "::notice::$BRANCH makes no Preview name."
+            exit 0
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          branch=$(jq -rn --arg b "$BRANCH" '$b | @uri')
+          if ! out=$(gh api "repos/$GITHUB_REPOSITORY/branches/$branch" --jq .name 2>&1); then
+            if printf '%s\n' "$out" | grep -q 'HTTP 404'; then
+              echo "action=delete" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            printf '%s\n' "$out"
+            exit 1
+          fi
+          [ "$GITHUB_EVENT_NAME" = workflow_run ] || exit 0
+          newest=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/storybook.yml/runs?branch=$branch&per_page=1" \
+            --jq '.workflow_runs[0].id')
+          if [ "$newest" = "$RUN_ID" ]; then
+            echo "action=deploy" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$BRANCH has a newer build, which deploys its Preview."
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.plan.outputs.action != ''
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        if: steps.plan.outputs.action != ''
+        with:
+          bun-version: 1.4.4
+      # No Bun cache: this job has the token.
+      - name: Install dependencies
+        if: steps.plan.outputs.action != ''
+        run: bun install --frozen-lockfile
+      - name: Download the build
+        if: steps.plan.outputs.action == 'deploy'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: storybook
+          path: ${{ runner.temp }}/storybook
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      # Only the output, and no symbolic links in it.
+      - name: Take the build
+        if: steps.plan.outputs.action == 'deploy'
+        env:
+          BUILD: ${{ runner.temp }}/storybook
+        run: |
+          if [ -n "$(find "$BUILD" -type l -print -quit)" ]; then
+            echo "::error::The build has symbolic links."
+            exit 1
+          fi
+          rm -rf storybook-static
+          mv "$BUILD" storybook-static
+      # Kept out of search results, which should lead to the site: Previews on
+      # a custom domain don't send noindex themselves. Wrangler labels the
+      # deployment with GITHUB_SHA, which here is main's, so it gets the
+      # branch's.
+      - name: Deploy the preview
+        id: deploy
+        if: steps.plan.outputs.action == 'deploy'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          NAME: ${{ steps.plan.outputs.name }}
+        run: |
+          printf '/*\n  X-Robots-Tag: noindex\n' > storybook-static/_headers
+          out=$(GITHUB_SHA="$SHA" bunx wrangler preview --name "$NAME" --tag "${SHA::7}" \
+            --message "${BRANCH}@${SHA::7}" --json)
+          printf '%s\n' "$out"
+          url=$(printf '%s\n' "$out" | sed -n '/^{/,$p' | jq -r '.preview.urls[0] // empty')
+          if [ -z "$url" ]; then
+            echo "::warning::The Preview has no URL: is preview.ui.siiway.org enabled for Previews?"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Link the preview from the commit
+        if: steps.deploy.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" -f state=success \
+            -f context=Preview -f target_url="$URL" -f description="The docs at this commit"
+      # A branch that never changed the docs has no Preview, which is fine;
+      # any other failure fails the job.
+      - name: Delete the preview
+        if: steps.plan.outputs.action == 'delete'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          NAME: ${{ steps.plan.outputs.name }}
+        run: |
+          if out=$(bunx wrangler preview delete --name "$NAME" --skip-confirmation 2>&1); then
+            printf '%s\n' "$out"
+          elif printf '%s\n' "$out" | grep -qi 'not found'; then
+            echo "::notice::$BRANCH had no Preview."
+          else
+            printf '%s\n' "$out"
+            exit 1
+          fi
