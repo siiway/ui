@@ -51,10 +51,14 @@ import {
   useThemeMode,
   type UiRouter,
 } from "@siiway/ui-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useMatch, useNavigate } from "react-router-dom";
 
 // Defined once, outside any component, so it stays the same object.
-const router: UiRouter = { Link, useNavigate };
+const router: UiRouter = {
+  Link,
+  useNavigate,
+  useMatch: (to, end) => useMatch({ path: to, end }) !== null,
+};
 
 export function Root() {
   const { mode, setMode, scheme } = useThemeMode();

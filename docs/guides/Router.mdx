@@ -5,20 +5,25 @@ import { Meta } from "@storybook/addon-docs/blocks";
 ## Router
 
 Some components link or navigate: data-list rows, overview tiles, settings
-link rows, back buttons, the status page's buttons, the top bar's menus. They
-don't import a router. They use the one you give `<UiProvider router>`. A
-link that looks like a button is still a link, so it opens in a new tab on a
-middle-click.
+link rows, back buttons, the status page's buttons, the top bar's menus, and
+the side nav, which also shows the current page. They don't import a router.
+They use the one you give `<UiProvider router>`. A link that looks like a
+button is still a link, so it opens in a new tab on a middle-click.
 
 ### React Router
 
-React Router's `Link` and `useNavigate` fit as they are:
+React Router's `Link` and `useNavigate` fit as they are, and `useMatch` with
+a line around it:
 
 ```tsx
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useMatch, useNavigate } from "react-router-dom";
 import type { UiRouter } from "@siiway/ui-react";
 
-const router: UiRouter = { Link, useNavigate };
+const router: UiRouter = {
+  Link,
+  useNavigate,
+  useMatch: (to, end) => useMatch({ path: to, end }) !== null,
+};
 
 <UiProvider scheme="light" router={router}>
 ```
@@ -26,14 +31,17 @@ const router: UiRouter = { Link, useNavigate };
 Define `router` once, outside any component. A new object on every render
 re-renders everything that reads the provider.
 
-The provider can sit outside `<RouterProvider>`: `useNavigate` is only called
-by components that navigate, and those render inside your routes.
+The provider can sit outside `<RouterProvider>`: `useNavigate` and `useMatch`
+are only called by components that navigate or match, and those render inside
+your routes.
 
 ### Other routers
 
 `Link` receives `to` (an in-app path), and may receive `state`, `className`,
 `onClick`, `aria-current` and `children`: pass them all on to the anchor.
-`useNavigate` is a hook that returns `(to: string) => void`:
+`useNavigate` is a hook that returns `(to: string) => void`. `useMatch`, if you
+give one, is a hook that says whether the reader is on `to`, or on a page
+below it unless `end`:
 
 ```tsx
 const router: UiRouter = {
@@ -42,15 +50,22 @@ const router: UiRouter = {
     const nav = useMyRouter();
     return (to) => nav.push(to);
   },
+  useMatch: (to, end) => {
+    const path = useMyRouter().pathname;
+    return (
+      path === to || (!end && path.startsWith(to.endsWith("/") ? to : `${to}/`))
+    );
+  },
 };
 ```
 
 ### No router
 
 Without `router`, links are plain `<a href>` and navigation loads the page,
-which suits static sites.
+which suits static sites. Side nav items are current only by their `active`.
 
 ### In your own components
 
-`<UiLink to="/apps">` renders a link through the router, and
-`useUiNavigate()` returns the navigate function.
+`<UiLink to="/apps">` renders a link through the router,
+`useUiNavigate()` returns the navigate function, and `useUiMatch(to, end?)`
+says whether the reader is on `to`.

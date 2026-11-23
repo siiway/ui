@@ -22,13 +22,19 @@ export interface UiLinkProps {
 }
 
 /**
- * How library components link and navigate. React Router fits as is:
- * `router={{ Link, useNavigate }}`.
+ * How library components link, navigate and know the current page. React
+ * Router fits as is: `router={{ Link, useNavigate }}`, plus `useMatch`.
  */
 export interface UiRouter {
   Link: ComponentType<UiLinkProps>;
   /** A hook returning a navigate function. Called during render, like any hook. */
   useNavigate: () => (to: string) => void;
+  /**
+   * A hook: whether the reader is on `to`, or on a page below it unless
+   * `end`. SideNav asks it for items without `active`. React Router:
+   * `(to, end) => useMatch({ path: to, end }) !== null`.
+   */
+  useMatch?: (to: string, end: boolean) => boolean;
 }
 
 function AnchorLink({ to, state: _state, ...rest }: UiLinkProps) {
@@ -78,6 +84,15 @@ export function UiLink(props: UiLinkProps) {
 /** A function that navigates to an in-app path. */
 export function useUiNavigate(): (to: string) => void {
   return useContext(UiContext).router.useNavigate();
+}
+
+/**
+ * Whether the reader is on `to`, or on a page below it unless `end`, by the
+ * router's `useMatch`; false without one.
+ */
+export function useUiMatch(to: string, end = false): boolean {
+  const { router } = useContext(UiContext);
+  return router.useMatch ? router.useMatch(to, end) : false;
 }
 
 /** The app's page-title handler, if it gave `<UiProvider onPageTitle>`. */
