@@ -20,9 +20,9 @@ import type { FluentParameters } from "./fluent/hooks";
 import { INITIAL_GLOBALS, noteGlobals, readGlobals } from "./globals";
 
 // Links and navigation in a story stay where they are: they'd lead to the
-// demo app's own pages. They move the story's own location instead
+// demo app's own pages. A plain click moves the story's own location instead
 // (`parameters.location`, "/" at first), which useMatch reads, so a SideNav's
-// current item follows the clicks.
+// current item follows the clicks. Each story starts at its own.
 const StoryLocation = createContext({ path: "/", go: (_to: string) => {} });
 
 function StoryLocationProvider({ initial, children }: { initial: string; children: ReactNode }) {
@@ -37,9 +37,12 @@ function StoryLink({ to, state: _state, onClick, ...rest }: UiLinkProps) {
     <a
       href={to}
       onClick={(e) => {
-        e.preventDefault();
         onClick?.(e);
-        go(to);
+        // Not when the link's own handler cancelled the click, nor for a
+        // click meant for a new tab or window.
+        const plain = !(e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
+        if (plain && !e.defaultPrevented) go(to);
+        e.preventDefault();
       }}
       {...rest}
     />
@@ -69,12 +72,12 @@ const router: UiRouter = {
  * (`parameters.fullPage`, StatusPage) fills a story alone, and on a docs page
  * stands at a set height rather than the window's (docs.css).
  */
-const withUiProvider: Decorator = (Story, { globals, viewMode, parameters }) => {
+const withUiProvider: Decorator = (Story, { id, globals, viewMode, parameters }) => {
   const { scheme, locale, dir } = readGlobals(globals);
   queueMicrotask(() => noteGlobals(globals));
   const docs = viewMode === "docs";
   const story = (
-    <StoryLocationProvider initial={parameters.location ?? "/"}>
+    <StoryLocationProvider key={id} initial={parameters.location ?? "/"}>
       <Story />
     </StoryLocationProvider>
   );
