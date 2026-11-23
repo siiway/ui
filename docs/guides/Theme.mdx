@@ -21,6 +21,10 @@ top of their shadow, which barely shows on the dark canvas. Badges keep their
 label on one line, where Chinese text would otherwise wrap a character at a
 time in a narrow row.
 
+To change that border on one surface, set its sides in the surface's
+`className` (`borderTopColor`, `borderTopStyle`…). A `border` or `borderTop`
+there loses to the global rule.
+
 ### Light and dark
 
 `useThemeMode()` keeps the person's choice and works out the scheme to draw:

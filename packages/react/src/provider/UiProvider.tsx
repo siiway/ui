@@ -17,7 +17,8 @@ export interface UiProviderProps extends Omit<FluentProviderProps, "theme"> {
    * This provider is the page. It takes the canvas colour, removes the
    * body's margin, and draws `<html>` in the scheme (`data-scheme`,
    * `color-scheme`, the canvas background), as `schemeBootScript` does
-   * before the app loads. Set it on the app's outermost provider only.
+   * before the app loads. Selected text takes a tint of the accent, and
+   * scrollbars are thin. Set it on the app's outermost provider only.
    */
   page?: boolean;
   /** Brand colour; missing or invalid gives Fluent's blue. */
