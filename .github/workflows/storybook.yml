@@ -54,7 +54,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Build Storybook
         run: bun run build-storybook
-      # Each page as Markdown, for "Copy Page".
+      # Each page as Markdown, for "Copy Page" and llms.txt, which the front
+      # page points to.
       - name: Install Playwright's Chromium
         run: bunx playwright install --with-deps chromium
       - name: Write the pages as Markdown

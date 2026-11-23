@@ -12,7 +12,7 @@
     "typecheck": "bun run build && tsc -p tsconfig.test.json && tsc -p docs",
     "storybook": "storybook dev -p 6006 --docs",
     "build-storybook": "storybook build -o storybook-static --docs --quiet",
-    "llms": "storybook-llms-extractor --distPath storybook-static --summaryBaseUrl https://ui.siiway.org --summaryTitle \"SiiWay UI\" --summaryDescription \"The look of SiiWay's apps: design tokens, a Fluent UI theme and React components.\"",
+    "llms": "bun scripts/llms.ts",
     "lint": "bun --bun eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
