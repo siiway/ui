@@ -4,14 +4,15 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 ## More hooks
 
-| Hook                                         | For                                                                                                                          |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `useCopy(resetMs = 1500)`                    | `{ state, copy(text) }`: copies to the clipboard; `state` is `idle`, `copied` or `failed`, then `idle` again.                |
-| `useDebouncedSearch(onSettle?, delay = 250)` | `{ query, setQuery, search }`: the box's value and its debounced, trimmed copy to search with.                               |
-| `usePageClamp(page, total, size, setPage)`   | Steps back a page when the current one is past the end, after a removal.                                                     |
-| `useThemeMode(options?)`                     | `{ mode, setMode, scheme }`: the stored light or dark choice. See [Theme](?path=/docs/guides-theme--docs).                   |
-| `useSearchShortcut(setOpen, { slash? })`     | Ctrl K (⌘K) toggles search from anywhere; with `slash`, "/" opens it. See [Search](?path=/docs/search-commandpalette--docs). |
-| `useUiStrings()`                             | The library's strings in the provider's language, for your own components.                                                   |
-| `useUiScheme()`                              | The provider's `scheme`.                                                                                                     |
-| `useUiNavigate()`                            | The navigate function of the provider's [router](?path=/docs/guides-router--docs).                                           |
-| `useUiPageTitle()`                           | The provider's `onPageTitle`.                                                                                                |
+| Hook                                         | For                                                                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `useCopy(resetMs = 1500)`                    | `{ state, copy(text) }`: copies to the clipboard; `state` is `idle`, `copied` or `failed`, then `idle` again.                         |
+| `useDebouncedSearch(onSettle?, delay = 250)` | `{ query, setQuery, search }`: the box's value and its debounced, trimmed copy to search with.                                        |
+| `usePageClamp(page, total, size, setPage)`   | Steps back a page when the current one is past the end, after a removal.                                                              |
+| `useThemeMode(options?)`                     | `{ mode, setMode, scheme }`: the stored light or dark choice. See [Theme](?path=/docs/guides-theme--docs).                            |
+| `useSearchShortcut(setOpen, { slash? })`     | Ctrl K (⌘K) toggles search from anywhere; with `slash`, "/" opens it. See [Search](?path=/docs/search-commandpalette--docs).          |
+| `useUiStrings()`                             | The library's strings in the provider's language, for your own components.                                                            |
+| `useUiScheme()`                              | The provider's `scheme`.                                                                                                              |
+| `useCanvasClass()`                           | A class with the canvas colour in the provider's scheme, for opaque parts on the canvas. See [Theme](?path=/docs/guides-theme--docs). |
+| `useUiNavigate()`                            | The navigate function of the provider's [router](?path=/docs/guides-router--docs).                                                    |
+| `useUiPageTitle()`                           | The provider's `onPageTitle`.                                                                                                         |

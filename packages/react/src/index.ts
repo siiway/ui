@@ -1,6 +1,7 @@
 // Theme and provider
 export { createTheme, type CreateThemeOptions } from "./theme/createTheme.js";
 export { UiProvider, type UiProviderProps } from "./provider/UiProvider.js";
+export { useCanvasClass } from "./provider/canvas.js";
 export {
   DEFAULT_ROUTER,
   UiLink,

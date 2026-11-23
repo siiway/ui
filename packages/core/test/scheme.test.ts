@@ -21,10 +21,25 @@ test("isThemeMode accepts the three modes only", () => {
     expect(isThemeMode(other)).toBe(false);
 });
 
-// Runs the boot script against a stand-in page: what's stored, the OS setting.
-function boot(stored: string | null | "throws", osDark: boolean, options?: SchemeBootOptions) {
+// Runs the boot script against a stand-in page: what's stored, the OS setting,
+// the page's theme-color metas.
+function boot(
+  stored: string | null | "throws",
+  osDark: boolean,
+  options?: SchemeBootOptions,
+  themeColors: string[] = [],
+) {
   const attributes: Record<string, string> = {};
-  const style: Record<string, string> = {};
+  const properties: Record<string, string> = {};
+  const style: Record<string, unknown> = {
+    setProperty: (name: string, value: string) => (properties[name] = value),
+  };
+  const metas = themeColors.map((content) => ({
+    content,
+    setAttribute(name: string, value: string) {
+      if (name === "content") this.content = value;
+    },
+  }));
   const localStorage = {
     getItem(key: string) {
       if (stored === "throws") throw new Error("blocked");
@@ -39,6 +54,7 @@ function boot(stored: string | null | "throws", osDark: boolean, options?: Schem
       setAttribute: (name: string, value: string) => (attributes[name] = value),
       style,
     },
+    querySelectorAll: (selector: string) => (selector === 'meta[name="theme-color"]' ? metas : []),
   };
   new Function("localStorage", "matchMedia", "document", schemeBootScript(options))(
     localStorage,
@@ -49,6 +65,8 @@ function boot(stored: string | null | "throws", osDark: boolean, options?: Schem
     scheme: attributes["data-scheme"],
     colorScheme: style.colorScheme,
     background: style.backgroundColor,
+    canvas: properties["--siiway-canvas"],
+    themeColors: metas.map((meta) => meta.content),
   };
 }
 
@@ -58,12 +76,24 @@ describe("schemeBootScript", () => {
       scheme: "dark",
       colorScheme: "dark",
       background: CANVAS.dark,
+      canvas: CANVAS.dark,
+      themeColors: [],
     });
     expect(boot("light", true)).toEqual({
       scheme: "light",
       colorScheme: "light",
       background: CANVAS.light,
+      canvas: CANVAS.light,
+      themeColors: [],
     });
+  });
+
+  test("sets each theme-color to the canvas", () => {
+    // One per OS scheme, as pages often have: the stored choice wins.
+    expect(boot("dark", false, undefined, ["#ffffff", "#000000"]).themeColors).toEqual([
+      CANVAS.dark,
+      CANVAS.dark,
+    ]);
   });
 
   test("follows the OS for system, nothing stored, junk, or blocked storage", () => {
