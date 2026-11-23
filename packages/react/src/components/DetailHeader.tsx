@@ -1,10 +1,10 @@
 // The top of a detail page (an app, a team, a user, a notice…): the way back
 // to its list, then its name with badges, a line under it, and an action.
 
-import { Button, Text, Title2, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
+import { Text, Title2, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
 import { ArrowLeftRegular } from "@fluentui/react-icons";
 import type { ReactNode } from "react";
-import { useUiNavigate } from "../provider/context.js";
+import { ButtonLink } from "./ButtonLink.js";
 
 const useStyles = makeStyles({
   back: {
@@ -49,17 +49,16 @@ export function BackButton({
   children: ReactNode;
 }) {
   const styles = useStyles();
-  const navigate = useUiNavigate();
   return (
-    <Button
+    <ButtonLink
+      to={to}
       appearance="subtle"
       size="small"
       icon={<ArrowLeftRegular />}
       className={styles.back}
-      onClick={() => navigate(to)}
     >
       {children}
-    </Button>
+    </ButtonLink>
   );
 }
 
