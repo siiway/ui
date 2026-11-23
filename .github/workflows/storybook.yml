@@ -58,8 +58,14 @@ jobs:
             bun-${{ runner.os }}-
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      # The preview is ahead of the published version, so the Introduction
+      # names its commit instead.
       - name: Build Storybook
-        run: bun run build-storybook
+        run: |
+          if [ "$GITHUB_REF" = refs/heads/main ]; then
+            export STORYBOOK_VERSION="main@${GITHUB_SHA::7}"
+          fi
+          bun run build-storybook
       # Each page as Markdown, for "Copy Page" and llms.txt, which the front
       # page points to.
       - name: Install Playwright's Chromium

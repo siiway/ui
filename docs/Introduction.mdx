@@ -6,7 +6,9 @@ import * as PageHeader from "./page-structure/PageHeader.stories";
 
 <h1 className="fluent">
   <span>SiiWay UI</span>
-  <span className="fluent-version">v{pkg.version}</span>
+  <span className="fluent-version">
+    {import.meta.env.STORYBOOK_VERSION || `v${pkg.version}`}
+  </span>
 </h1>
 
 The look of SiiWay's apps, as packages. Every component in these docs is
