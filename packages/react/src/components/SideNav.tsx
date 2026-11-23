@@ -5,8 +5,8 @@
 // drawer on a phone) is the app's layout.
 
 import { Text, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
-import type { ReactNode } from "react";
-import { UiLink, useUiMatch } from "../provider/context.js";
+import { useContext, type ReactNode } from "react";
+import { UiContext, UiLink, useUiMatch } from "../provider/context.js";
 
 const useStyles = makeStyles({
   root: {
@@ -103,7 +103,7 @@ export interface SideNavItem {
   icon?: ReactNode;
   /**
    * The page the reader is on; the item gets `aria-current="page"`. Leave it
-   * out and the router's `useMatch` decides.
+   * out and the router's `useMatch` decides; set, the router isn't asked.
    */
   active?: boolean;
   /**
@@ -207,24 +207,39 @@ function Item({
   );
 }
 
-// A link item: its own component, so only links call the router's hook.
-function ItemLink({
-  item,
-  to,
-  branch,
-  onNavigate,
-  styles,
-  children,
-}: {
+interface ItemLinkProps {
   item: SideNavItem;
   to: string;
   branch: boolean;
   onNavigate?: () => void;
   styles: Styles;
   children: ReactNode;
-}) {
-  const matched = useUiMatch(to, item.end ?? branch);
-  const active = item.active ?? matched;
+}
+
+// Only a link without `active` asks the router, from a component of its own:
+// when `active` or the router's `useMatch` comes or goes, the link is another
+// component, so React mounts it afresh rather than calling other hooks.
+function ItemLink(props: ItemLinkProps) {
+  const { router } = useContext(UiContext);
+  if (props.item.active !== undefined) return <LinkRow {...props} active={props.item.active} />;
+  if (!router.useMatch) return <LinkRow {...props} active={false} />;
+  return <MatchedLink {...props} />;
+}
+
+function MatchedLink(props: ItemLinkProps) {
+  const active = useUiMatch(props.to, props.item.end ?? props.branch);
+  return <LinkRow {...props} active={active} />;
+}
+
+function LinkRow({
+  item,
+  to,
+  branch,
+  onNavigate,
+  styles,
+  children,
+  active,
+}: ItemLinkProps & { active: boolean }) {
   return (
     <UiLink
       to={to}

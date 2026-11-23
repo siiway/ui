@@ -88,7 +88,8 @@ export function useUiNavigate(): (to: string) => void {
 
 /**
  * Whether the reader is on `to`, or on a page below it unless `end`, by the
- * router's `useMatch`; false without one.
+ * router's `useMatch`; false without one. Keep the same router: one that
+ * gains or loses `useMatch` changes the hooks this calls.
  */
 export function useUiMatch(to: string, end = false): boolean {
   const { router } = useContext(UiContext);

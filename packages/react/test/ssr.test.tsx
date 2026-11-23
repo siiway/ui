@@ -261,7 +261,11 @@ test("a side nav asks the router which page is current, unless told", () => {
   const router: UiRouter = {
     Link: ({ to, state: _state, ...rest }) => <a href={to} {...rest} />,
     useNavigate: () => () => {},
-    useMatch: (to, end) => path === to || (!end && path.startsWith(to === "/" ? to : `${to}/`)),
+    useMatch: (to, end) => {
+      // An item with `active` isn't asked.
+      if (to === "/teams" || to === "/apps/1") throw new Error(`asked about ${to}`);
+      return path === to || (!end && path.startsWith(to === "/" ? to : `${to}/`));
+    },
   };
   const { html } = render(
     <ui.SideNav
