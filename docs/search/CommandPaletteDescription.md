@@ -8,8 +8,8 @@ result leads) and hand the palette the results.
 Leave out `query` and the palette holds the field's text, emptying it each
 time it opens; `onQueryChange` tells you the text to search with, including
 the empty text of a new opening. Keep the palette mounted while it's closed,
-so it fades out as it closes. Pass `query` to hold the text yourself, as
-when picking a recent search fills it in.
+so it fades out as it closes. Pass `query` and `onQueryChange` to hold the
+text yourself, as when picking a recent search fills it in.
 
 ## Rows
 

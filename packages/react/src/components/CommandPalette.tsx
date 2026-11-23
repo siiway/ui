@@ -215,18 +215,29 @@ export interface CommandGroup<T = unknown> {
   items: CommandItem<T>[];
 }
 
-export interface CommandPaletteProps<T = unknown> {
+// `query` comes with `onQueryChange`, which keeps it in step with the field.
+export type CommandPaletteProps<T = unknown> = CommandPaletteBaseProps<T> &
+  (
+    | {
+        /**
+         * The field's text, if you hold it. Leave it out and the palette holds
+         * it, emptying the field each time it opens.
+         */
+        query: string;
+        /**
+         * Called with the field's text as it changes, including when an opening
+         * empties it. Needed with `query`.
+         */
+        onQueryChange: (query: string) => void;
+      }
+    | { query?: undefined; onQueryChange?: (query: string) => void }
+  );
+
+interface CommandPaletteBaseProps<T> {
   /** Whether the palette is open. */
   open: boolean;
   /** Called with the new state, as when Esc or the close button closes it. */
   onOpenChange: (open: boolean) => void;
-  /**
-   * The field's text, if you hold it. Leave it out and the palette holds it,
-   * emptying the field each time it opens.
-   */
-  query?: string;
-  /** Called with the field's text as it changes, including when an opening empties it. */
-  onQueryChange?: (query: string) => void;
   /**
    * What to show for the query: `{ label?, action?, items }` each. `action`
    * is a button beside the label, such as "Clear".
@@ -286,7 +297,7 @@ export function CommandPalette<T = unknown>({
 
   // Without `query`, the palette holds the text, and each opening starts a
   // new search: the field empties as the palette opens, and the app hears of
-  // it before the first paint, so it never shows the last search's results.
+  // it before the palette paints, to give the groups for the empty text.
   const controlled = query !== undefined;
   const [ownQuery, setOwnQuery] = useState("");
   const text = controlled ? query : ownQuery;
@@ -298,9 +309,15 @@ export function CommandPalette<T = unknown>({
       setActiveId(null);
     }
   }
+  // Once per opening, even when Strict Mode runs the effect again; not on
+  // every render, as onQueryChange may be a new function each time.
+  const reported = useRef(false);
   useIsomorphicLayoutEffect(() => {
-    if (open && !controlled) onQueryChange?.("");
-    // Once per opening: onQueryChange may be a new function each render.
+    if (!open) reported.current = false;
+    else if (!controlled && !reported.current) {
+      reported.current = true;
+      onQueryChange?.("");
+    }
   }, [open]);
 
   useEffect(() => {
