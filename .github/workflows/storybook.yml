@@ -3,9 +3,8 @@ name: Storybook
 # Builds the Storybook. ui.siiway.org (wrangler.jsonc) shows the published
 # version: a release (release.yml) runs this on its tag, and a run on a v* tag
 # by hand redeploys that version. A push to main that changes what it's built
-# from uploads a preview version instead, at
-# https://main-siiway-ui.<subdomain>.workers.dev. Only the deploy job, which
-# runs nothing but wrangler, gets the token.
+# from deploys preview.ui.siiway.org instead. Only the deploy job, which runs
+# nothing but wrangler, gets the token.
 #
 # Setup: CLOUDFLARE_API_TOKEN, with Workers Scripts:Edit, and Workers
 # Routes:Edit and Zone:Read on siiway.org, in two environments: `production`
@@ -110,10 +109,12 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # A version that serves only its preview URLs; the site stays as it is.
-      - name: Upload the preview
+      # Kept out of search results, which should lead to the site.
+      - name: Deploy the preview
         if: github.ref == 'refs/heads/main'
-        run: bunx wrangler versions upload --preview-alias main
+        run: |
+          printf '/*\n  X-Robots-Tag: noindex\n' > storybook-static/_headers
+          bunx wrangler deploy --env preview
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

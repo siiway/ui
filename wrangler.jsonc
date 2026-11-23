@@ -7,7 +7,10 @@
   "assets": { "directory": "./storybook-static" },
   "routes": [{ "pattern": "ui.siiway.org", "custom_domain": true }],
   "workers_dev": false,
-  // Versions uploaded from main (not deployed) are served at their preview
-  // URLs on workers.dev. A deploy applies this setting.
-  "preview_urls": true,
+  "env": {
+    // main before it's released, as the Worker siiway-ui-preview.
+    "preview": {
+      "routes": [{ "pattern": "preview.ui.siiway.org", "custom_domain": true }],
+    },
+  },
 }
