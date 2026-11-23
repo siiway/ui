@@ -200,6 +200,19 @@ test("useThemeMode renders the default mode, drawn light, on the server", () => 
   expect(renderToString(<Probe defaultMode="dark" />)).toContain("dark/dark");
 });
 
+test("the top bar's menu button can come before the brand", () => {
+  const bar = (props: Partial<ui.TopBarProps>) =>
+    render(<ui.TopBar brand={{ label: "Prism", to: "/" }} onMenu={() => {}} {...props} />, {
+      scheme: "light",
+      locale: "en",
+    }).html;
+  const end = bar({});
+  expect(end.indexOf("Open navigation")).toBeGreaterThan(end.indexOf("Prism"));
+  const start = bar({ menuPosition: "start", menuBelow: 768 });
+  expect(start.indexOf("Open navigation")).toBeGreaterThan(-1);
+  expect(start.indexOf("Open navigation")).toBeLessThan(start.indexOf("Prism"));
+});
+
 test("buttons that open a page are links through the app's router", () => {
   const router: UiRouter = {
     Link: ({ to, state: _state, ...rest }) => <a data-app-router href={`/app${to}`} {...rest} />,
