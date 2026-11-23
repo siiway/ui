@@ -116,16 +116,12 @@ jobs:
               --title "v${VERSION}" --notes-file release/notes.md
           fi
 
-  # ui.siiway.org shows the published version. A tag pushed with this
-  # workflow's token starts no workflow, so this starts the deploy.
+  # ui.siiway.org shows the published version: the docs at this commit,
+  # deployed from main only.
   docs:
-    needs: [build, publish]
-    runs-on: ubuntu-latest
+    needs: publish
     permissions:
-      actions: write
-    steps:
-      - name: Deploy the docs from the release's tag
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.build.outputs.version }}
-        run: gh workflow run storybook.yml --repo "$GITHUB_REPOSITORY" --ref "v${VERSION}"
+      contents: read
+    uses: ./.github/workflows/storybook.yml
+    with:
+      site: true

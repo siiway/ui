@@ -1,15 +1,15 @@
 name: Storybook
 
 # Builds the Storybook. ui.siiway.org (wrangler.jsonc) shows the published
-# version: a release (release.yml) runs this on its tag, and a run on a v* tag
-# by hand redeploys that version. A push to a branch that changes what it's
-# built from only builds it: preview.yml, which runs from main, deploys it as
-# the branch's Preview. Only the deploy job, which runs nothing but wrangler,
-# gets the token.
+# version: Release (release.yml) calls this on main once it publishes, and
+# rerunning that run's docs jobs redeploys it. A push to a branch that changes
+# what it's built from only builds it: preview.yml, which runs from main,
+# deploys it as the branch's Preview. Only the deploy job, which runs nothing
+# but wrangler, gets the token.
 #
 # Setup: CLOUDFLARE_API_TOKEN, with Workers Scripts:Edit, and Workers
 # Routes:Edit and Zone:Read on siiway.org, in the `production` environment,
-# for v* tags. Wrangler finds the account from the token.
+# for main only. Wrangler finds the account from the token.
 
 on:
   push:
@@ -28,19 +28,27 @@ on:
       - "wrangler.jsonc"
       - ".github/workflows/storybook.yml"
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      site:
+        description: Build the published site and deploy it to ui.siiway.org.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   build:
-    # A branch makes a Preview; only a release tag ships the site.
-    if: startsWith(github.ref, 'refs/heads/') || startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
-    # A newer push replaces a build still running for the same branch.
+    # A newer push replaces a build still running for the same branch. The
+    # site, built on main too, has its own.
     concurrency:
-      group: storybook-build-${{ github.ref }}
+      group: storybook-build-${{ inputs.site && 'site' || github.ref }}
       cancel-in-progress: true
+    env:
+      SITE: ${{ inputs.site }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -61,9 +69,9 @@ jobs:
       # names its branch and commit instead.
       - name: Build Storybook
         run: |
-          case "$GITHUB_REF" in
-            refs/heads/*) export STORYBOOK_VERSION="${GITHUB_REF_NAME}@${GITHUB_SHA::7}" ;;
-          esac
+          if [ "$SITE" != true ]; then
+            export STORYBOOK_VERSION="${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+          fi
           bun run build-storybook
       # Each page as Markdown, for "Copy Page" and llms.txt, which the front
       # page points to.
@@ -72,9 +80,9 @@ jobs:
       # A Preview's pages link to each other, not to the site.
       - name: Write the pages as Markdown
         run: |
-          case "$GITHUB_REF" in
-            refs/heads/*) export SITE_URL="" ;;
-          esac
+          if [ "$SITE" != true ]; then
+            export SITE_URL=""
+          fi
           bun run llms
       - name: Upload the build
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -86,7 +94,7 @@ jobs:
 
   deploy:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: inputs.site
     runs-on: ubuntu-latest
     environment:
       name: production

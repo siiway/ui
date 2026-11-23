@@ -21,8 +21,8 @@ permissions: {}
 
 jobs:
   deploy:
-    # A build in this repository. A release tag's run has no branch, so the
-    # head check skips it: it deploys the site itself.
+    # A build in this repository. The site's build runs inside Release, so it
+    # never comes here.
     if: >-
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
