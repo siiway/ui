@@ -255,3 +255,39 @@ test("a palette's rows carry data, and its query comes with onQueryChange", () =
   const stuck = <ui.CommandPalette {...deaf} groups={[]} onSelect={() => {}} query="a" />;
   expect([palette, stuck]).toHaveLength(2);
 });
+
+test("a side nav asks the router which page is current, unless told", () => {
+  const path = "/apps/1";
+  const router: UiRouter = {
+    Link: ({ to, state: _state, ...rest }) => <a href={to} {...rest} />,
+    useNavigate: () => () => {},
+    useMatch: (to, end) => path === to || (!end && path.startsWith(to === "/" ? to : `${to}/`)),
+  };
+  const { html } = render(
+    <ui.SideNav
+      label="Main"
+      groups={[
+        {
+          items: [
+            { label: "Overview", to: "/", end: true },
+            { label: "Everything", to: "/" },
+            { label: "Apps", to: "/apps" },
+            { label: "App", to: "/apps/1", active: false },
+            { label: "Teams", to: "/teams", active: true },
+          ],
+        },
+        {
+          items: [
+            // Its pages are under it, so it isn't current on them...
+            { label: "Listed", to: "/apps", items: [{ label: "One", to: "/apps/2" }] },
+            // ...unless it says so.
+            { label: "Section", to: "/apps", end: false, items: [{ label: "Two", to: "/apps/3" }] },
+          ],
+        },
+      ]}
+    />,
+    { scheme: "light", router },
+  );
+  const current = [...html.matchAll(/<a [^>]*aria-current="page"[^>]*>([^<]*)/g)].map((m) => m[1]);
+  expect(current).toEqual(["Everything", "Apps", "Teams", "Section"]);
+});

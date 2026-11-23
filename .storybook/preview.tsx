@@ -11,6 +11,7 @@ import "./docs.css";
 import { tokens } from "@fluentui/react-components";
 import { UiProvider, type UiLinkProps, type UiRouter } from "@siiway/ui-react";
 import type { Decorator, Preview } from "@storybook/react-vite";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { StoryLocaleContext } from "../docs/helpers";
 import { withAriaLive } from "./fluent/decorators/withAriaLive";
 import { FluentDocsContainer } from "./fluent/docs/FluentDocsContainer";
@@ -19,23 +20,46 @@ import type { FluentParameters } from "./fluent/hooks";
 import { INITIAL_GLOBALS, noteGlobals, readGlobals } from "./globals";
 
 // Links and navigation in a story stay where they are: they'd lead to the
-// demo app's own pages.
+// demo app's own pages. They move the story's own location instead
+// (`parameters.location`, "/" at first), which useMatch reads, so a SideNav's
+// current item follows the clicks.
+const StoryLocation = createContext({ path: "/", go: (_to: string) => {} });
+
+function StoryLocationProvider({ initial, children }: { initial: string; children: ReactNode }) {
+  const [path, go] = useState(initial);
+  const value = useMemo(() => ({ path, go }), [path]);
+  return <StoryLocation.Provider value={value}>{children}</StoryLocation.Provider>;
+}
+
 function StoryLink({ to, state: _state, onClick, ...rest }: UiLinkProps) {
+  const { go } = useContext(StoryLocation);
   return (
     <a
       href={to}
       onClick={(e) => {
         e.preventDefault();
         onClick?.(e);
+        go(to);
       }}
       {...rest}
     />
   );
 }
 
-function noop() {}
+// React Router's matching, for plain paths: "/apps" matches "/apps/1" too,
+// unless `end`.
+function useStoryMatch(to: string, end: boolean) {
+  const { path } = useContext(StoryLocation);
+  const base = to.replace(/\/+$/, "");
+  if (path.replace(/\/+$/, "") === base) return true;
+  return !end && path.startsWith(`${base}/`);
+}
 
-const router: UiRouter = { Link: StoryLink, useNavigate: () => noop };
+const router: UiRouter = {
+  Link: StoryLink,
+  useNavigate: () => useContext(StoryLocation).go,
+  useMatch: useStoryMatch,
+};
 
 /**
  * Fluent's withFluentProvider, with the library's provider. On a docs page the
@@ -49,7 +73,11 @@ const withUiProvider: Decorator = (Story, { globals, viewMode, parameters }) => 
   const { scheme, locale, dir } = readGlobals(globals);
   queueMicrotask(() => noteGlobals(globals));
   const docs = viewMode === "docs";
-  const story = <Story />;
+  const story = (
+    <StoryLocationProvider initial={parameters.location ?? "/"}>
+      <Story />
+    </StoryLocationProvider>
+  );
   return (
     <UiProvider scheme={scheme} locale={locale} dir={dir} router={router} page={!docs}>
       <StoryLocaleContext.Provider value={locale}>

@@ -5,6 +5,7 @@ export { useCanvasClass } from "./provider/canvas.js";
 export {
   DEFAULT_ROUTER,
   UiLink,
+  useUiMatch,
   useUiNavigate,
   useUiPageTitle,
   useUiScheme,
