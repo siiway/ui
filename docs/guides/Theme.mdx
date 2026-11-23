@@ -15,6 +15,16 @@ The SiiWay look is Fluent UI v9's theme with three things changed:
 - **Shadows.** Only for floating surfaces (menus, popovers, dialogs). Page
   content is flat and separated by borders alone.
 
+`<UiProvider>` also adds two global rules for Fluent's own parts. Floating
+surfaces (dialogs, menus, popovers, dropdown lists) get a hairline border on
+top of their shadow, which barely shows on the dark canvas. Badges keep their
+label on one line, where Chinese text would otherwise wrap a character at a
+time in a narrow row.
+
+To change that border on one surface, set its sides in the surface's
+`className` (`borderTopColor`, `borderTopStyle`…). A `border` or `borderTop`
+there loses to the global rule.
+
 ### Light and dark
 
 `useThemeMode()` keeps the person's choice and works out the scheme to draw:
@@ -37,7 +47,9 @@ const { mode, setMode, scheme } = useThemeMode();
 `page` makes the outermost provider the page. It and `<html>` take the
 canvas colour, the body loses the browser's 8px margin, and `<html>` gets
 `color-scheme`, so scrollbars and native controls match, and
-`data-scheme="light"` or `"dark"` for your own CSS. Leave it off nested
+`data-scheme="light"` or `"dark"` for your own CSS. Selected text takes a
+tint of the accent, and scrollbars are thin, with a neutral thumb on a clear
+track (in Chromium and Safari; Firefox keeps its own). Leave it off nested
 providers, such as a preview.
 
 #### Before the app loads
