@@ -43,12 +43,16 @@ export function schemeFromRequest(
   prefersColorSchemeHint?: string | null,
   cookie: string = SCHEME_COOKIE,
 ): Scheme | null {
+  // The last that matches: a browser sends cookies with longer paths first,
+  // and an old one set on a page's path would come before ours, on `/`.
+  let found: Scheme | null = null;
   for (const part of (cookieHeader ?? "").split(";")) {
     const at = part.indexOf("=");
     if (at < 0 || part.slice(0, at).trim() !== cookie) continue;
     const value = part.slice(at + 1).trim();
-    if (value === "light" || value === "dark") return value;
+    if (value === "light" || value === "dark") found = value;
   }
+  if (found) return found;
   // A structured header: the value comes quoted, as "dark".
   const hint = prefersColorSchemeHint?.trim().replace(/^"(.*)"$/, "$1");
   return hint === "light" || hint === "dark" ? hint : null;

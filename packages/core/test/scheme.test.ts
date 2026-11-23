@@ -153,6 +153,11 @@ describe("schemeFromRequest", () => {
     expect(schemeFromRequest("__Host-theme=dark", null, "__Host-theme")).toBe("dark");
   });
 
+  test("takes the last valid one: an old one on a page's path comes first", () => {
+    expect(schemeFromRequest(`${SCHEME_COOKIE}=dark; a=1; ${SCHEME_COOKIE}=light`)).toBe("light");
+    expect(schemeFromRequest(`${SCHEME_COOKIE}=dark; ${SCHEME_COOKIE}=junk`)).toBe("dark");
+  });
+
   test("falls back to the browser's hint, quoted or not", () => {
     expect(schemeFromRequest(null, '"dark"')).toBe("dark");
     expect(schemeFromRequest("other=1", "light")).toBe("light");

@@ -3,8 +3,9 @@
 // other tabs; `system` follows the OS setting as it changes.
 //
 // On the server, and while hydrating, it gives `defaultMode`, drawn in
-// `initialScheme` (what the server read from the scheme cookie) or light: the
-// server can't see the stored choice or the OS. The client then moves to the
+// `initialScheme` (what the server read from the scheme cookie), or else as
+// `defaultMode` draws without the OS (`system` light): the server can't see
+// the stored choice or the OS. The client then moves to the
 // real scheme. useSyncExternalStore makes that switch without a hydration
 // mismatch. With `cookie`, it keeps the scheme cookie in step for the next
 // request.
@@ -61,6 +62,14 @@ function serverDark() {
   return false;
 }
 
+function writeCookie(name: string, scheme: Scheme) {
+  try {
+    document.cookie = schemeCookie(name, scheme, window.isSecureContext);
+  } catch {
+    // A sandboxed frame has no cookies.
+  }
+}
+
 // True once the page is the client's: false on the server and while
 // hydrating, where the server's scheme must be drawn.
 function subscribeNothing() {
@@ -89,7 +98,7 @@ export interface ThemeModeOptions {
   /**
    * The scheme the server rendered in, on the server and again on the client:
    * drawn until hydration ends. `schemeFromRequest`'s answer; with null,
-   * light.
+   * `defaultMode`'s scheme, light for `system`.
    */
   initialScheme?: Scheme | null;
 }
@@ -116,15 +125,10 @@ export function useThemeMode({
   const live = resolveScheme(mode, dark);
   const scheme = hydrated || !initialScheme ? live : initialScheme;
 
-  // Once the client knows the real scheme, and whenever it changes: the
-  // choice, another tab's, or the OS setting.
+  // Once the client knows the real scheme, and whenever it changes: another
+  // tab's choice, or the OS setting.
   useEffect(() => {
-    if (!cookie || !hydrated) return;
-    try {
-      document.cookie = schemeCookie(cookie, live, window.isSecureContext);
-    } catch {
-      // A sandboxed frame has no cookies.
-    }
+    if (cookie && hydrated) writeCookie(cookie, live);
   }, [cookie, hydrated, live]);
 
   const setMode = useCallback(
@@ -134,9 +138,11 @@ export function useThemeMode({
       } catch {
         memory.set(storageKey, next);
       }
+      // At once, not in the effect: a page load right after must carry it.
+      if (cookie) writeCookie(cookie, resolveScheme(next, systemDark()));
       for (const listener of listeners) listener();
     },
-    [storageKey],
+    [storageKey, cookie],
   );
 
   return { mode, setMode, scheme };
