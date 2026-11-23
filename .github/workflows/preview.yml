@@ -1,0 +1,114 @@
+name: Preview
+
+# Deploys a branch's Storybook build (storybook.yml) as the Worker's Preview
+# named after the branch, at <branch>.preview.ui.siiway.org, and deletes it
+# with the branch. This file always runs from main, so a branch can change
+# what its Preview shows but not how it's deployed, and the token stays with
+# main. The deploy runs nothing from the build: wrangler and its config come
+# from main.
+#
+# Setup: CLOUDFLARE_API_TOKEN (as in storybook.yml) in the `preview`
+# environment, for main only.
+
+on:
+  # zizmor: ignore[dangerous-triggers] main's code; the build is only uploaded.
+  workflow_run:
+    workflows: [Storybook]
+    types: [completed]
+  delete:
+
+permissions: {}
+
+jobs:
+  deploy:
+    # Branch pushes in this repository; a release tag's run deploys the site.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # the build, from the Storybook run
+      statuses: write # the Preview's link, on the branch's commit
+    environment:
+      name: preview
+      url: ${{ steps.preview.outputs.url }}
+    # Never cancel a deploy halfway; each branch queues apart.
+    concurrency:
+      group: preview-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    env:
+      BRANCH: ${{ github.event.workflow_run.head_branch }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      # No Bun cache: this job has the token.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Download the build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: storybook
+          path: ${{ runner.temp }}/storybook
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      # Only the output, and no symbolic links in it.
+      - name: Take the build
+        env:
+          BUILD: ${{ runner.temp }}/storybook
+        run: |
+          if [ -n "$(find "$BUILD" -type l -print -quit)" ]; then
+            echo "::error::The build has symbolic links."
+            exit 1
+          fi
+          rm -rf storybook-static
+          mv "$BUILD" storybook-static
+      # Kept out of search results, which should lead to the site: Previews on
+      # a custom domain don't send noindex themselves.
+      - name: Deploy the preview
+        id: preview
+        run: |
+          printf '/*\n  X-Robots-Tag: noindex\n' > storybook-static/_headers
+          out=$(bunx wrangler preview --name "$BRANCH" --message "${BRANCH}@${SHA::7}" --json)
+          printf '%s\n' "$out"
+          url=$(printf '%s\n' "$out" | sed -n '/^{/,$p' | jq -r '.preview.urls[0] // empty')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Link the preview from the commit
+        if: steps.preview.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.preview.outputs.url }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" -f state=success \
+            -f context=Preview -f target_url="$URL" -f description="The docs at this commit"
+
+  # A deleted branch takes its Preview with it. A branch that never changed
+  # the docs has none, so a failure only warns.
+  delete:
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Delete the preview
+        run: |
+          bunx wrangler preview delete --name "$BRANCH" --skip-confirmation ||
+            echo "::warning::No Preview deleted for $BRANCH."
+        env:
+          BRANCH: ${{ github.event.ref }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
