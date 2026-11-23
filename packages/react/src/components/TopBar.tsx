@@ -4,8 +4,8 @@
 // a grey (not brand) selection.
 //
 // On a narrow screen it gives way in steps: the menu button that opens the
-// app's navigation shows from 960px down, the links go at 720px, the crumb at
-// 540px.
+// app's navigation shows from 960px (or 768px) down, at the end or the start,
+// the links go at 720px, the crumb at 540px.
 
 import {
   Button,
@@ -82,11 +82,11 @@ const useStyles = makeStyles({
     "@media (max-width: 540px)": { display: "none" },
   },
   // A wrapper, because Fluent's Button sets its own display at the same
-  // specificity as a class on it.
-  menuButton: {
-    display: "none",
-    "@media (max-width: 960px)": { display: "inline-flex" },
-  },
+  // specificity as a class on it. Griffel's media queries are static, so the
+  // widths it shows from are presets.
+  menuButton: { display: "none" },
+  menuBelow960: { "@media (max-width: 960px)": { display: "inline-flex" } },
+  menuBelow768: { "@media (max-width: 768px)": { display: "inline-flex" } },
   links: {
     display: "flex",
     alignItems: "center",
@@ -160,8 +160,12 @@ export interface TopBarProps {
    * makes a menu, active when one of its items is. Hidden from 720px down.
    */
   links?: TopBarLink[];
-  /** Shows a menu button from 960px down that calls this, to open the app's navigation. */
+  /** Shows a menu button from `menuBelow` down that calls this, to open the app's navigation. */
   onMenu?: () => void;
+  /** Where the menu button sits: `"end"`, before the actions (the default), or `"start"`, before the brand. */
+  menuPosition?: "start" | "end";
+  /** The width the menu button shows from, and down: `960` (the default) or `768`, to match where the app's navigation becomes a drawer. */
+  menuBelow?: 768 | 960;
   /** The menu button's name. Defaults to the library's "Open navigation". */
   menuLabel?: string;
   /** Names the links for screen readers. Defaults to the library's "Primary". */
@@ -180,6 +184,8 @@ export function TopBar({
   crumb,
   links,
   onMenu,
+  menuPosition = "end",
+  menuBelow = 960,
   menuLabel,
   linksLabel,
   sticky,
@@ -189,8 +195,24 @@ export function TopBar({
   const styles = useStyles();
   const canvas = useCanvasClass();
   const strings = useUiStrings();
+  const menu = onMenu && (
+    <span
+      className={mergeClasses(
+        styles.menuButton,
+        menuBelow === 768 ? styles.menuBelow768 : styles.menuBelow960,
+      )}
+    >
+      <Button
+        appearance="subtle"
+        icon={<Navigation20Regular />}
+        aria-label={menuLabel ?? strings.openNavigation}
+        onClick={onMenu}
+      />
+    </span>
+  );
   return (
     <header className={mergeClasses(styles.root, canvas, sticky && styles.sticky, className)}>
+      {menuPosition === "start" && menu}
       <div className={styles.brandGroup}>
         <UiLink to={brand.to} className={styles.brand}>
           <BrandMark iconUrl={brand.logo} size={24} />
@@ -217,16 +239,7 @@ export function TopBar({
       )}
       <div className={styles.spacer} />
       <div className={styles.actions}>
-        {onMenu && (
-          <span className={styles.menuButton}>
-            <Button
-              appearance="subtle"
-              icon={<Navigation20Regular />}
-              aria-label={menuLabel ?? strings.openNavigation}
-              onClick={onMenu}
-            />
-          </span>
-        )}
+        {menuPosition === "end" && menu}
         {children}
       </div>
     </header>
