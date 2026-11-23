@@ -85,14 +85,26 @@ export function useUiPageTitle(): PageTitleHandler | null {
   return useContext(UiContext).onPageTitle;
 }
 
+// The header each handler last heard from. Only it clears the title, so a
+// page that leaves after the next one came (in a route transition) doesn't
+// clear the next one's.
+const titleOwners = new WeakMap<PageTitleHandler, object>();
+
 // Names the browser tab after a page header ("Security · Prism"): `tabTitle`,
-// or the title when it's plain text; a rich title leaves the site name.
+// or the title when it's plain text; a rich or empty title (a name still
+// loading, say) leaves the site name.
 export function useTabTitle(title: ReactNode, tabTitle?: string) {
   const onPageTitle = useUiPageTitle();
   const text = tabTitle ?? (typeof title === "string" ? title : null);
   useEffect(() => {
     if (!text || !onPageTitle) return;
+    const owner = {};
+    titleOwners.set(onPageTitle, owner);
     onPageTitle(text);
-    return () => onPageTitle(null);
+    return () => {
+      if (titleOwners.get(onPageTitle) !== owner) return;
+      titleOwners.delete(onPageTitle);
+      onPageTitle(null);
+    };
   }, [text, onPageTitle]);
 }
