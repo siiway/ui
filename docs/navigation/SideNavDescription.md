@@ -14,7 +14,8 @@ Leave out `active` and the side nav asks your
 on its path and the pages below it, so Apps stays current on an app's page.
 Give `end` to `/`, which is above every page. An item with `items` has
 `end` already: its pages are listed under it, and show themselves. Set
-`active` to decide yourself. The current item gets `aria-current="page"`.
+`active` to decide yourself: the router isn't asked about that item. The
+current item gets `aria-current="page"`.
 
 ## Groups
 

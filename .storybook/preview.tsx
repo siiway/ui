@@ -37,13 +37,18 @@ function StoryLink({ to, state: _state, onClick, ...rest }: UiLinkProps) {
     <a
       href={to}
       onClick={(e) => {
-        onClick?.(e);
-        // Not when the link's own handler cancelled the click, nor for a
-        // click meant for a new tab or window.
-        const plain = !(e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
-        if (plain && !e.defaultPrevented) go(to);
-        e.preventDefault();
+        try {
+          onClick?.(e);
+          // Not when the link's own handler cancelled the click, nor for a
+          // click meant for a new tab or window.
+          const plain = !(e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
+          if (plain && !e.defaultPrevented) go(to);
+        } finally {
+          e.preventDefault();
+        }
       }}
+      // A middle-click, which opens a new tab.
+      onAuxClick={(e) => e.preventDefault()}
       {...rest}
     />
   );

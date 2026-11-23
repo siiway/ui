@@ -103,7 +103,7 @@ export interface SideNavItem {
   icon?: ReactNode;
   /**
    * The page the reader is on; the item gets `aria-current="page"`. Leave it
-   * out and the router's `useMatch` decides.
+   * out and the router's `useMatch` decides; set, the router isn't asked.
    */
   active?: boolean;
   /**
