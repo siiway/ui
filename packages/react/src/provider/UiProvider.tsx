@@ -1,10 +1,11 @@
 import {
   FluentProvider,
   makeStaticStyles,
+  tokens,
   useIsomorphicLayoutEffect,
   type FluentProviderProps,
 } from "@fluentui/react-components";
-import { CANVAS, pickStrings, type Scheme, type UiStrings } from "@siiway/ui-core";
+import { CANVAS, DEFAULT_ACCENT, pickStrings, type Scheme, type UiStrings } from "@siiway/ui-core";
 import { useMemo } from "react";
 import { createTheme } from "../theme/createTheme.js";
 import { DEFAULT_ROUTER, UiContext, type PageTitleHandler, type UiRouter } from "./context.js";
@@ -38,7 +39,46 @@ export interface UiProviderProps extends Omit<FluentProviderProps, "theme"> {
   onPageTitle?: PageTitleHandler;
 }
 
-const usePageStyles = makeStaticStyles({ body: { margin: "0" } });
+// The look's rules for Fluent's own parts, wherever they render. Badges keep
+// their label on one line: in a narrow flex row, CJK text otherwise wraps a
+// character at a time. Surfaces that float (in a portal, outside the page's
+// containers) get a hairline on top of their shadow, which barely shows on the
+// dark canvas.
+const useLookStyles = makeStaticStyles({
+  ".fui-Badge": { whiteSpace: "nowrap", flexShrink: "0" },
+  ".fui-DialogSurface, .fui-MenuPopover, .fui-PopoverSurface, .fui-Listbox": {
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
+});
+
+function LookStyles() {
+  useLookStyles();
+  return null;
+}
+
+// Selected text takes a tint of the accent, and scrollbars are thin, with a
+// neutral thumb on a clear track in either scheme.
+const usePageStyles = makeStaticStyles({
+  body: { margin: "0" },
+  "::selection": {
+    backgroundColor: `color-mix(in srgb, var(--colorBrandBackground, ${DEFAULT_ACCENT}) 22%, transparent)`,
+  },
+  "::-webkit-scrollbar": { width: "8px", height: "8px" },
+  "::-webkit-scrollbar-track": { backgroundColor: "transparent" },
+  "::-webkit-scrollbar-thumb": {
+    backgroundColor: "rgba(0, 0, 0, 0.16)",
+    backgroundClip: "padding-box",
+    border: "2px solid transparent",
+    borderRadius: "4px",
+  },
+  "::-webkit-scrollbar-thumb:hover": { backgroundColor: "rgba(0, 0, 0, 0.32)" },
+  'html[data-scheme="dark"] ::-webkit-scrollbar-thumb': {
+    backgroundColor: "rgba(255, 255, 255, 0.14)",
+  },
+  'html[data-scheme="dark"] ::-webkit-scrollbar-thumb:hover': {
+    backgroundColor: "rgba(255, 255, 255, 0.28)",
+  },
+});
 
 // <html> in the page's scheme, for what lies outside the provider: the
 // overscroll area, the scrollbars, form controls' native parts.
@@ -88,6 +128,7 @@ export function UiProvider({
   const style = page ? { backgroundColor: CANVAS[scheme], ...rest.style } : rest.style;
   return (
     <FluentProvider theme={theme} {...rest} style={style}>
+      <LookStyles />
       {page && <PageScheme scheme={scheme} />}
       <UiContext.Provider value={value}>{children}</UiContext.Provider>
     </FluentProvider>
