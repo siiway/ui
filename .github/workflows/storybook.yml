@@ -93,6 +93,7 @@ jobs:
           retention-days: 1
 
   deploy:
+    name: Deploy ui.siiway.org
     needs: build
     if: inputs.site
     runs-on: ubuntu-latest
