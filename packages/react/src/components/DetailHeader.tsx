@@ -4,6 +4,7 @@
 import { Text, Title2, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
 import { ArrowLeftRegular } from "@fluentui/react-icons";
 import type { ReactNode } from "react";
+import { useTabTitle } from "../provider/context.js";
 import { ButtonLink } from "./ButtonLink.js";
 
 const useStyles = makeStyles({
@@ -68,6 +69,7 @@ export function DetailHeader({
   badges,
   subtitle,
   actions,
+  tabTitle,
   className,
 }: {
   /** An avatar or icon before the name. */
@@ -80,9 +82,14 @@ export function DetailHeader({
   subtitle?: ReactNode;
   /** Buttons at the end of the row, e.g. "Edit" or "Visit website". */
   actions?: ReactNode;
+  /** Browser tab title when the name isn't plain text, e.g. a link. Defaults
+   *  to the title when it is a plain string. Goes to
+   *  `<UiProvider onPageTitle>`. */
+  tabTitle?: string;
   className?: string;
 }) {
   const styles = useStyles();
+  useTabTitle(title, tabTitle);
   return (
     <div className={mergeClasses(styles.header, className)}>
       {icon}
