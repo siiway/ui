@@ -19,6 +19,7 @@ on:
       - "tsconfig.base.json"
       - "package.json"
       - "bun.lock"
+      - "scripts/llms.ts"
       - "wrangler.jsonc"
       - ".github/workflows/storybook.yml"
   workflow_dispatch:

@@ -1,6 +1,6 @@
 // The built Storybook's pages as text, for LLMs and "Copy Page" (`bun run
-// llms`, after `bun run build-storybook`): llms.txt lists them and
-// llms/<id>.txt holds each. Fluent's extractor reads the stories and writes
+// llms`, after `bun run build-storybook` and, once, `bunx playwright install
+// chromium`): llms.txt lists them and llms/<id>.txt holds each. Fluent's extractor reads the stories and writes
 // the component pages; this script also:
 // - reads each guide (MDX) once its code blocks have rendered, without the
 //   live examples, which read as stray words;
@@ -30,7 +30,7 @@ const url = (id: string) => `${BASE}/llms/${id}.txt`;
 const linkPages = (text: string) =>
   text.replace(
     /\]\(\?path=\/docs\/([\w-]+)--docs(#[\w-]*)?\)/g,
-    (_, id: string) => `](${url(id)})`,
+    (_, id: string, hash = "") => `](${url(id)}${hash})`,
   );
 
 const data = await extractStorybookData({ distPath: DIST, summaryBaseUrl: BASE });
