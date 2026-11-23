@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   type ComponentType,
   type MouseEventHandler,
   type ReactNode,
@@ -41,7 +42,7 @@ function useLocationNavigate() {
 /** Plain `<a href>` links and full page loads: for apps without a client router. */
 export const DEFAULT_ROUTER: UiRouter = { Link: AnchorLink, useNavigate: useLocationNavigate };
 
-/** Receives the page's title from PageHeader, and null when the page goes. */
+/** Receives the page's title from its header, and null when the page goes. */
 export type PageTitleHandler = (title: string | null) => void;
 
 export interface UiContextValue {
@@ -82,4 +83,16 @@ export function useUiNavigate(): (to: string) => void {
 /** The app's page-title handler, if it gave `<UiProvider onPageTitle>`. */
 export function useUiPageTitle(): PageTitleHandler | null {
   return useContext(UiContext).onPageTitle;
+}
+
+// Names the browser tab after a page header ("Security · Prism"): `tabTitle`,
+// or the title when it's plain text; a rich title leaves the site name.
+export function useTabTitle(title: ReactNode, tabTitle?: string) {
+  const onPageTitle = useUiPageTitle();
+  const text = tabTitle ?? (typeof title === "string" ? title : null);
+  useEffect(() => {
+    if (!text || !onPageTitle) return;
+    onPageTitle(text);
+    return () => onPageTitle(null);
+  }, [text, onPageTitle]);
 }

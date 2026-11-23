@@ -3,8 +3,8 @@
 // across pages instead of each one rolling its own header row.
 
 import { Text, Title2, makeStyles, tokens } from "@fluentui/react-components";
-import { useEffect, type CSSProperties, type ReactNode } from "react";
-import { useUiPageTitle } from "../provider/context.js";
+import type { CSSProperties, ReactNode } from "react";
+import { useTabTitle } from "../provider/context.js";
 
 const useStyles = makeStyles({
   root: {
@@ -51,23 +51,9 @@ interface PageHeaderProps {
   style?: CSSProperties;
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-  actions,
-  tabTitle: tabTitleProp,
-  style,
-}: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, tabTitle, style }: PageHeaderProps) {
   const styles = useStyles();
-  const onPageTitle = useUiPageTitle();
-  // Name the browser tab after the page ("Security · Prism"). Only plain
-  // string titles; a rich title (with badges, say) leaves the site name.
-  const tabTitle = tabTitleProp ?? (typeof title === "string" ? title : null);
-  useEffect(() => {
-    if (!tabTitle || !onPageTitle) return;
-    onPageTitle(tabTitle);
-    return () => onPageTitle(null);
-  }, [tabTitle, onPageTitle]);
+  useTabTitle(title, tabTitle);
   return (
     <div className={styles.root} style={style}>
       <div className={styles.titles}>

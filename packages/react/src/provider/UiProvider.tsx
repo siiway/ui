@@ -33,9 +33,9 @@ export interface UiProviderProps extends Omit<FluentProviderProps, "theme"> {
    */
   router?: UiRouter;
   /**
-   * Called with a page's title when a PageHeader mounts, and with null when
-   * it unmounts, so the app can set the browser tab's title. Pass a stable
-   * function.
+   * Called with a page's title when a PageHeader or DetailHeader mounts, and
+   * with null when it unmounts, so the app can set the browser tab's title.
+   * Pass a stable function.
    */
   onPageTitle?: PageTitleHandler;
 }
