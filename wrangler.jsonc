@@ -5,12 +5,10 @@
   // A static site: the built Storybook (`bun run build-storybook`), no Worker
   // code. Deployed by .github/workflows/storybook.yml.
   "assets": { "directory": "./storybook-static" },
-  "routes": [{ "pattern": "ui.siiway.org", "custom_domain": true }],
+  // The site, and its Previews (`wrangler preview --name <name>`) at
+  // <name>.ui.siiway.org.
+  "routes": [{ "pattern": "ui.siiway.org", "custom_domain": true, "previews_enabled": true }],
   "workers_dev": false,
-  "env": {
-    // main before it's released, as the Worker siiway-ui-preview.
-    "preview": {
-      "routes": [{ "pattern": "preview.ui.siiway.org", "custom_domain": true }],
-    },
-  },
+  // Previews take nothing from production; a static site has nothing to set.
+  "previews": {},
 }
