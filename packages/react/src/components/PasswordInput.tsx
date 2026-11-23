@@ -9,10 +9,14 @@ import { useUiStrings } from "../provider/context.js";
 
 const useStyles = makeStyles({
   // Edge draws its own reveal button in a password field, and a clear button
-  // once the text shows, beside the toggle here.
+  // once the text shows, beside the toggle here. Other browsers reject these
+  // selectors, and Griffel logs each rejected rule in development: @supports
+  // keeps the rules from them.
   root: {
-    "& input::-ms-reveal": { display: "none" },
-    "& input::-ms-clear": { display: "none" },
+    "@supports selector(::-ms-reveal)": {
+      "& input::-ms-reveal": { display: "none" },
+      "& input::-ms-clear": { display: "none" },
+    },
   },
 });
 
