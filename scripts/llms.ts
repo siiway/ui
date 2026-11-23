@@ -20,7 +20,8 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium } from "playwright";
 
-const BASE = "https://ui.siiway.org";
+// An empty SITE_URL, as on a Preview, links the pages from the site's root.
+const BASE = process.env.SITE_URL ?? "https://ui.siiway.org";
 const TITLE = "SiiWay UI";
 const SUMMARY = "The look of SiiWay's apps: design tokens, a Fluent UI theme and React components.";
 const DIST = join(import.meta.dir, "..", "storybook-static");

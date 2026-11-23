@@ -3,7 +3,8 @@
   "name": "siiway-ui",
   "compatibility_date": "2026-11-01",
   // A static site: the built Storybook (`bun run build-storybook`), no Worker
-  // code. Deployed by .github/workflows/storybook.yml.
+  // code. Deployed by .github/workflows/storybook.yml (the site) and
+  // preview.yml (branch Previews).
   "assets": { "directory": "./storybook-static" },
   // As in the dashboard, which a deploy makes match: the site, and a domain
   // for Previews only, where `wrangler preview --name <name>` is served at
