@@ -215,29 +215,22 @@ export interface CommandGroup<T = unknown> {
   items: CommandItem<T>[];
 }
 
-// `query` comes with `onQueryChange`, which keeps it in step with the field.
-export type CommandPaletteProps<T = unknown> = CommandPaletteBaseProps<T> &
-  (
-    | {
-        /**
-         * The field's text, if you hold it. Leave it out and the palette holds
-         * it, emptying the field each time it opens.
-         */
-        query: string;
-        /**
-         * Called with the field's text as it changes, including when an opening
-         * empties it. Needed with `query`.
-         */
-        onQueryChange: (query: string) => void;
-      }
-    | { query?: undefined; onQueryChange?: (query: string) => void }
-  );
-
-interface CommandPaletteBaseProps<T> {
+export interface CommandPaletteProps<T = unknown> {
   /** Whether the palette is open. */
   open: boolean;
   /** Called with the new state, as when Esc or the close button closes it. */
   onOpenChange: (open: boolean) => void;
+  /**
+   * The field's text, if you hold it: clear it as you open the palette to
+   * start a new search. Leave it out and the palette holds it, emptying the
+   * field each time it opens.
+   */
+  query?: string;
+  /**
+   * Called with the field's text as it changes. Without `query`, that
+   * includes the empty field of each opening.
+   */
+  onQueryChange: (query: string) => void;
   /**
    * What to show for the query: `{ label?, action?, items }` each. `action`
    * is a button beside the label, such as "Clear".
@@ -295,30 +288,33 @@ export function CommandPalette<T = unknown>({
   );
   const active = flat[activeIndex];
 
-  // Without `query`, the palette holds the text, and each opening starts a
-  // new search: the field empties as the palette opens, and the app hears of
-  // it before the palette paints, to give the groups for the empty text.
+  // Each opening starts at the top row. Without `query`, the palette holds
+  // the text, and each opening starts a new search: the field empties as the
+  // palette opens, and the app hears of it before the palette paints, to give
+  // the groups for the empty text.
   const controlled = query !== undefined;
   const [ownQuery, setOwnQuery] = useState("");
   const text = controlled ? query : ownQuery;
   const [wasOpen, setWasOpen] = useState(false);
+  const [emptied, setEmptied] = useState(0);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open && !controlled) {
-      setOwnQuery("");
+    if (open) {
       setActiveId(null);
+      if (!controlled) {
+        setOwnQuery("");
+        setEmptied(emptied + 1);
+      }
     }
   }
-  // Once per opening, even when Strict Mode runs the effect again; not on
+  // Once per emptying: not again when Strict Mode reruns the effect, nor on
   // every render, as onQueryChange may be a new function each time.
-  const reported = useRef(false);
+  const reported = useRef(0);
   useIsomorphicLayoutEffect(() => {
-    if (!open) reported.current = false;
-    else if (!controlled && !reported.current) {
-      reported.current = true;
-      onQueryChange?.("");
-    }
-  }, [open]);
+    if (reported.current === emptied) return;
+    reported.current = emptied;
+    onQueryChange("");
+  }, [emptied]);
 
   useEffect(() => {
     if (!active) return;
@@ -362,7 +358,7 @@ export function CommandPalette<T = unknown>({
             value={text}
             onChange={(e) => {
               if (!controlled) setOwnQuery(e.target.value);
-              onQueryChange?.(e.target.value);
+              onQueryChange(e.target.value);
               setActiveId(null);
             }}
             onKeyDown={(e) => {

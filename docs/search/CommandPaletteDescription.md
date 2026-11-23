@@ -8,8 +8,9 @@ result leads) and hand the palette the results.
 Leave out `query` and the palette holds the field's text, emptying it each
 time it opens; `onQueryChange` tells you the text to search with, including
 the empty text of a new opening. Keep the palette mounted while it's closed,
-so it fades out as it closes. Pass `query` and `onQueryChange` to hold the
-text yourself, as when picking a recent search fills it in.
+so it fades out as it closes. Pass `query` to hold the text yourself, as
+when picking a recent search fills it in, and clear it as you open the
+palette to start a new search.
 
 ## Rows
 
@@ -26,9 +27,11 @@ Each group in `groups` lists its rows in `items`. A row (`CommandItem`) is:
 | `data`     | `T`         | Anything of yours, handed back with the row to `onSelect`: what the row stands for.               |
 
 Wrap matched words in `<mark>` in the title or excerpt to highlight them.
+`T`, the type of `data`, comes from `groups`; for rows of different kinds,
+name it: `<CommandPalette<Page | Command> …>`.
 
-The first row is the active one, and stays so as results change, so Enter
-opens what's at the top. Moving the pointer over a row makes it active;
+The first row is the active one, each time the palette opens and as results
+change, so Enter opens what's at the top. Moving the pointer over a row makes it active;
 a pointer resting on the list doesn't take over from fresh results.
 
 ## useSearchShortcut

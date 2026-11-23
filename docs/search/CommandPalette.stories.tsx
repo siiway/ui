@@ -183,7 +183,14 @@ export const Recent = () => {
       ];
   return (
     <>
-      <SearchButton onClick={() => setOpen(true)} shortcut={false} />
+      <SearchButton
+        onClick={() => {
+          // It holds the text, so it starts each search itself.
+          setQuery("");
+          setOpen(true);
+        }}
+        shortcut={false}
+      />
       <CommandPalette
         open={open}
         onOpenChange={setOpen}
