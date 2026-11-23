@@ -2,19 +2,21 @@ name: Storybook
 
 # Builds the Storybook. ui.siiway.org (wrangler.jsonc) shows the published
 # version: a release (release.yml) runs this on its tag, and a run on a v* tag
-# by hand redeploys that version. A push to main that changes what it's built
-# from updates the Worker's Preview `main` instead, at
-# main.preview.ui.siiway.org. Only the deploy job, which runs nothing but
-# wrangler, gets the token.
+# by hand redeploys that version. A push to a branch that changes what it's
+# built from updates the Worker's Preview named after the branch instead, at
+# <branch>.preview.ui.siiway.org (main.preview.ui.siiway.org for main), and
+# deleting the branch deletes it. Only the jobs that run nothing but wrangler
+# get the token.
 #
 # Setup: CLOUDFLARE_API_TOKEN, with Workers Scripts:Edit, and Workers
 # Routes:Edit and Zone:Read on siiway.org, in two environments: `production`
-# for v* tags and `preview` for main. Wrangler finds the account from the
+# for v* tags and `preview` for branches. Wrangler finds the account from the
 # token.
 
 on:
   push:
-    branches: [main]
+    # Dependabot's pushes get no secrets.
+    branches: ["**", "!dependabot/**"]
     paths:
       - "docs/**"
       - ".storybook/**"
@@ -27,21 +29,18 @@ on:
       - "scripts/llms.ts"
       - "wrangler.jsonc"
       - ".github/workflows/storybook.yml"
+  delete:
   workflow_dispatch:
-
-# Never cancel a deploy halfway. The site and the preview queue apart, so a
-# release waiting for approval holds up no preview.
-concurrency:
-  group: storybook-${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'preview' }}
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
   build:
-    # A manual run from another branch must not ship it.
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    # A branch makes a Preview; only a release tag ships the site.
+    if: >-
+      github.event_name != 'delete' &&
+      (startsWith(github.ref, 'refs/heads/') || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,13 +58,13 @@ jobs:
             bun-${{ runner.os }}-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      # The preview is ahead of the published version, so the Introduction
-      # names its commit instead.
+      # A Preview is ahead of the published version, so the Introduction
+      # names its branch and commit instead.
       - name: Build Storybook
         run: |
-          if [ "$GITHUB_REF" = refs/heads/main ]; then
-            export STORYBOOK_VERSION="main@${GITHUB_SHA::7}"
-          fi
+          case "$GITHUB_REF" in
+            refs/heads/*) export STORYBOOK_VERSION="${GITHUB_REF_NAME}@${GITHUB_SHA::7}" ;;
+          esac
           bun run build-storybook
       # Each page as Markdown, for "Copy Page" and llms.txt, which the front
       # page points to.
@@ -84,7 +83,14 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'preview' }}
+    environment:
+      name: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'preview' }}
+      url: ${{ startsWith(github.ref, 'refs/tags/v') && 'https://ui.siiway.org' || steps.preview.outputs.url }}
+    # Never cancel a deploy halfway. The site and each Preview queue apart, so
+    # a release waiting for approval holds up no Preview.
+    concurrency:
+      group: storybook-${{ startsWith(github.ref, 'refs/tags/v') && 'production' || github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -119,9 +125,37 @@ jobs:
       # Kept out of search results, which should lead to the site: Previews on
       # a custom domain don't send noindex themselves.
       - name: Deploy the preview
-        if: github.ref == 'refs/heads/main'
+        id: preview
+        if: startsWith(github.ref, 'refs/heads/')
         run: |
           printf '/*\n  X-Robots-Tag: noindex\n' > storybook-static/_headers
-          bunx wrangler preview --name main --message "main@${GITHUB_SHA::7}"
+          out=$(bunx wrangler preview --name "$GITHUB_REF_NAME" \
+            --message "${GITHUB_REF_NAME}@${GITHUB_SHA::7}" --json)
+          printf '%s\n' "$out"
+          url=$(printf '%s\n' "$out" | sed -n '/^{/,$p' | jq -r '.preview.urls[0] // empty')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  # A deleted branch takes its Preview with it. A branch that never changed
+  # the docs has none, so a failure only warns.
+  delete-preview:
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Delete the preview
+        run: |
+          bunx wrangler preview delete --name "$BRANCH" --skip-confirmation ||
+            echo "::warning::No Preview deleted for $BRANCH."
+        env:
+          BRANCH: ${{ github.event.ref }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
