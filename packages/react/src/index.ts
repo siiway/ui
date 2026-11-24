@@ -132,9 +132,12 @@ export { CopyIdText, CopyIdTrigger } from "./components/CopyIdTrigger.js";
 export {
   CANVAS,
   DEFAULT_ACCENT,
+  SCHEME_COOKIE,
   THEME_STORAGE_KEY,
   resolveScheme,
   schemeBootScript,
+  schemeCookie,
+  schemeFromRequest,
   type Scheme,
   type ThemeMode,
   type UiStrings,

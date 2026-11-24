@@ -99,8 +99,8 @@ see [Light and dark](?path=/docs/guides-theme--docs).
 Every component renders on the server. Use Fluent's usual SSR setup
 (`RendererProvider`, `SSRProvider`, `renderToStyleElements`) around
 `<UiProvider>`. Pass the scheme you rendered with so the client hydrates to
-the same theme. `useThemeMode` can't know the person's choice on the server:
-see [On the server](?path=/docs/guides-theme--docs).
+the same theme. To render the person's light or dark choice on the server,
+keep it in a cookie: see [On the server](?path=/docs/guides-theme--docs).
 
 ## Next
 

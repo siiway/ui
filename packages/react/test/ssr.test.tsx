@@ -191,13 +191,68 @@ test("a page provider takes the canvas", () => {
   expect(own.html).toContain("background-color:red");
 });
 
-test("useThemeMode renders the default mode, drawn light, on the server", () => {
+test("useThemeMode renders the default mode, drawn light or in initialScheme, on the server", () => {
   function Probe(options: ui.ThemeModeOptions) {
     const { mode, scheme } = ui.useThemeMode(options);
     return <p>{`${mode}/${scheme}`}</p>;
   }
   expect(renderToString(<Probe />)).toContain("system/light");
   expect(renderToString(<Probe defaultMode="dark" />)).toContain("dark/dark");
+  // What the server read from the scheme cookie, whatever the default mode.
+  expect(renderToString(<Probe initialScheme="dark" />)).toContain("system/dark");
+  expect(renderToString(<Probe defaultMode="light" initialScheme="dark" />)).toContain(
+    "light/dark",
+  );
+  expect(renderToString(<Probe initialScheme={null} />)).toContain("system/light");
+});
+
+test("useThemeMode's setMode writes the scheme cookie at once, for a page load right after", () => {
+  let setMode!: (mode: ui.ThemeModeState["mode"]) => void;
+  function Probe() {
+    setMode = ui.useThemeMode({ cookie: "theme", storageKey: "set-mode-test" }).setMode;
+    return null;
+  }
+  renderToString(<Probe />);
+  // A stand-in browser: storage, a dark OS, cookies.
+  const stored = new Map<string, string>();
+  let full = false;
+  const page = { cookie: "" };
+  const g = globalThis as Record<string, unknown>;
+  const saved = {
+    window: Object.getOwnPropertyDescriptor(g, "window"),
+    document: Object.getOwnPropertyDescriptor(g, "document"),
+  };
+  g.window = {
+    localStorage: {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem(key: string, value: string) {
+        if (full) throw new Error("QuotaExceededError");
+        stored.set(key, value);
+      },
+    },
+    matchMedia: () => ({ matches: true }),
+    isSecureContext: true,
+  };
+  g.document = page;
+  try {
+    setMode("system");
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "dark", true));
+    setMode("light");
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "light", true));
+    // Storage full: the tab keeps the choice itself, and the cookie follows it.
+    full = true;
+    setMode("dark");
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "dark", true));
+    full = false;
+    setMode("light");
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "light", true));
+  } finally {
+    for (const key of ["window", "document"] as const) {
+      const was = saved[key];
+      if (was) Object.defineProperty(g, key, was);
+      else delete g[key];
+    }
+  }
 });
 
 test("the top bar's menu button can come before the brand", () => {
