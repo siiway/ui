@@ -150,7 +150,9 @@ describe("schemeFromRequest", () => {
   test("reads the scheme cookie among the others", () => {
     expect(schemeFromRequest(`a=1; ${SCHEME_COOKIE}=dark; b=2`)).toBe("dark");
     expect(schemeFromRequest(`${SCHEME_COOKIE}=light`, '"dark"')).toBe("light");
-    expect(schemeFromRequest("__Host-theme=dark", null, "__Host-theme")).toBe("dark");
+    expect(schemeFromRequest("__Host-theme=dark", null, { cookie: "__Host-theme" })).toBe("dark");
+    // Repeated Cookie fields, as the Fetch API's Headers joins them.
+    expect(schemeFromRequest(`a=1, ${SCHEME_COOKIE}=dark`)).toBe("dark");
   });
 
   test("takes the last valid one: an old one on a page's path comes first", () => {
@@ -162,6 +164,14 @@ describe("schemeFromRequest", () => {
     expect(schemeFromRequest(null, '"dark"')).toBe("dark");
     expect(schemeFromRequest("other=1", "light")).toBe("light");
     expect(schemeFromRequest(`${SCHEME_COOKIE}=purple`, '"dark"')).toBe("dark");
+  });
+
+  test("leaves the hint out for a fixed defaultMode, which a first visit draws", () => {
+    expect(schemeFromRequest(null, '"dark"', { defaultMode: "light" })).toBeNull();
+    expect(schemeFromRequest(null, '"light"', { defaultMode: "dark" })).toBeNull();
+    expect(schemeFromRequest(`${SCHEME_COOKIE}=dark`, '"light"', { defaultMode: "light" })).toBe(
+      "dark",
+    );
   });
 
   test("is null without either", () => {

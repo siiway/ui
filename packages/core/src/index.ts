@@ -6,6 +6,7 @@ export {
   schemeCookie,
   schemeFromRequest,
   type Scheme,
+  type SchemeRequestOptions,
   type ThemeMode,
 } from "./scheme.js";
 export { schemeBootScript, type SchemeBootOptions } from "./boot.js";

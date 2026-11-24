@@ -10,7 +10,6 @@ import {
   createDOMRenderer,
   renderToStyleElements,
 } from "@fluentui/react-components";
-import { schemeCookie } from "@siiway/ui-core";
 import * as ui from "@siiway/ui-react";
 import { UiProvider, type UiProviderProps, type UiRouter } from "@siiway/ui-react";
 import { readFileSync } from "node:fs";
@@ -210,28 +209,49 @@ test("useThemeMode renders the default mode, drawn light or in initialScheme, on
 test("useThemeMode's setMode writes the scheme cookie at once, for a page load right after", () => {
   let setMode!: (mode: ui.ThemeModeState["mode"]) => void;
   function Probe() {
-    setMode = ui.useThemeMode({ cookie: "theme" }).setMode;
+    setMode = ui.useThemeMode({ cookie: "theme", storageKey: "set-mode-test" }).setMode;
     return null;
   }
   renderToString(<Probe />);
   // A stand-in browser: storage, a dark OS, cookies.
-  const g = globalThis as { window?: unknown; document?: unknown };
-  const saved = { window: g.window, document: g.document };
+  const stored = new Map<string, string>();
+  let full = false;
   const page = { cookie: "" };
+  const g = globalThis as Record<string, unknown>;
+  const saved = {
+    window: Object.getOwnPropertyDescriptor(g, "window"),
+    document: Object.getOwnPropertyDescriptor(g, "document"),
+  };
   g.window = {
-    localStorage: { setItem() {} },
+    localStorage: {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem(key: string, value: string) {
+        if (full) throw new Error("QuotaExceededError");
+        stored.set(key, value);
+      },
+    },
     matchMedia: () => ({ matches: true }),
     isSecureContext: true,
   };
   g.document = page;
   try {
     setMode("system");
-    expect(page.cookie).toBe(schemeCookie("theme", "dark", true));
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "dark", true));
     setMode("light");
-    expect(page.cookie).toBe(schemeCookie("theme", "light", true));
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "light", true));
+    // Storage full: the tab keeps the choice itself, and the cookie follows it.
+    full = true;
+    setMode("dark");
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "dark", true));
+    full = false;
+    setMode("light");
+    expect(page.cookie).toBe(ui.schemeCookie("theme", "light", true));
   } finally {
-    g.window = saved.window;
-    g.document = saved.document;
+    for (const key of ["window", "document"] as const) {
+      const was = saved[key];
+      if (was) Object.defineProperty(g, key, was);
+      else delete g[key];
+    }
   }
 });
 

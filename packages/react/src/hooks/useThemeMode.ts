@@ -24,7 +24,9 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 // setMode in this tab notifies these; other tabs arrive as `storage` events.
 const listeners = new Set<() => void>();
-// Where the choice lives when the browser blocks localStorage.
+// This tab's choice when localStorage wouldn't take it (blocked, or full). It
+// wins over what's stored, other tabs' choices included, until a write gets
+// through.
 const memory = new Map<string, string>();
 
 function subscribeMode(onChange: () => void) {
@@ -47,11 +49,20 @@ function systemDark() {
 }
 
 function readStored(key: string): string | null {
+  const own = memory.get(key);
+  if (own !== undefined) return own;
   try {
     return window.localStorage.getItem(key);
   } catch {
-    return memory.get(key) ?? null;
+    return null;
   }
+}
+
+// The scheme the page draws, read afresh: while hydrating, the hook's own
+// values are still the server's.
+function currentScheme(storageKey: string, defaultMode: ThemeMode): Scheme {
+  const stored = readStored(storageKey);
+  return resolveScheme(isThemeMode(stored) ? stored : defaultMode, systemDark());
 }
 
 function serverStored() {
@@ -71,7 +82,7 @@ function writeCookie(name: string, scheme: Scheme) {
 }
 
 // True once the page is the client's: false on the server and while
-// hydrating, where the server's scheme must be drawn.
+// hydrating, where initialScheme must be drawn.
 function subscribeNothing() {
   return () => {};
 }
@@ -120,29 +131,36 @@ export function useThemeMode({
 }: ThemeModeOptions = {}): ThemeModeState {
   const stored = useSyncExternalStore(subscribeMode, () => readStored(storageKey), serverStored);
   const dark = useSyncExternalStore(subscribeSystem, systemDark, serverDark);
-  const hydrated = useSyncExternalStore(subscribeNothing, clientTrue, serverFalse);
+  // Without initialScheme there's nothing to hold until hydration ends, so the
+  // server's answer is the client's, and hydrating needs no second render.
+  const hydrated = useSyncExternalStore(
+    subscribeNothing,
+    clientTrue,
+    initialScheme ? serverFalse : clientTrue,
+  );
   const mode = isThemeMode(stored) ? stored : defaultMode;
   const live = resolveScheme(mode, dark);
   const scheme = hydrated || !initialScheme ? live : initialScheme;
 
-  // Once the client knows the real scheme, and whenever it changes: another
-  // tab's choice, or the OS setting.
+  // On load, and whenever the scheme changes: another tab's choice, or the
+  // OS setting.
   useEffect(() => {
-    if (cookie && hydrated) writeCookie(cookie, live);
-  }, [cookie, hydrated, live]);
+    if (cookie) writeCookie(cookie, currentScheme(storageKey, defaultMode));
+  }, [cookie, storageKey, defaultMode, live]);
 
   const setMode = useCallback(
     (next: ThemeMode) => {
       try {
         window.localStorage.setItem(storageKey, next);
+        memory.delete(storageKey);
       } catch {
         memory.set(storageKey, next);
       }
       // At once, not in the effect: a page load right after must carry it.
-      if (cookie) writeCookie(cookie, resolveScheme(next, systemDark()));
+      if (cookie) writeCookie(cookie, currentScheme(storageKey, defaultMode));
       for (const listener of listeners) listener();
     },
-    [storageKey, cookie],
+    [storageKey, cookie, defaultMode],
   );
 
   return { mode, setMode, scheme };
