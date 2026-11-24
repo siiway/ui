@@ -1,6 +1,6 @@
 {
   "name": "@siiway/ui-react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "SiiWay's Fluent UI v9 theme, provider and components for React.",
   "license": "MIT",
   "homepage": "https://ui.siiway.org",

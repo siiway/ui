@@ -1,6 +1,6 @@
 {
   "name": "@siiway/ui-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "SiiWay design tokens, theme maths and UI strings, for any framework.",
   "license": "MIT",
   "homepage": "https://ui.siiway.org",
