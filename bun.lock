@@ -37,11 +37,11 @@
     },
     "packages/core": {
       "name": "@siiway/ui-core",
-      "version": "0.1.0",
+      "version": "0.2.0",
     },
     "packages/react": {
       "name": "@siiway/ui-react",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@siiway/ui-core": "workspace:*",
       },
